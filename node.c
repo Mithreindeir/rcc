@@ -1,0 +1,324 @@
+#include "node.h"
+
+t_call *t_call_init(t_ident *ident, t_expr **expr_l, int num_expr)
+{
+	t_call *call = malloc(sizeof(t_call));
+
+	call->ident = ident;
+	call->expr_list = expr_l;
+	call->num_expr = num_expr;
+
+	return call;
+}
+
+t_ident *t_ident_init(char *ident)
+{
+	t_ident *idnt = malloc(sizeof(t_ident));
+
+	idnt->ident = ident;
+
+	return idnt;
+}
+
+t_binop *t_binop_init(t_expr *lhs, int op, t_expr *rhs)
+{
+	t_binop *binop = malloc(sizeof(t_binop));	
+
+	binop->lhs = lhs;
+	binop->op = op;
+	binop->rhs = rhs;
+
+	return binop;
+}
+
+t_expr *t_expr_init0(t_ident *ident)
+{
+	t_expr *expr = malloc(sizeof(t_expr));
+
+	expr->ident = ident;
+	expr->type = 0;
+
+	return expr;
+}
+
+t_expr *t_expr_init1(t_numeric *num)
+{
+	t_expr *expr = malloc(sizeof(t_expr));
+
+	expr->cnumeric = num;
+	expr->type = 1;
+
+	return expr;
+}
+
+t_expr *t_expr_init2(t_expr *lhs, int op, t_expr *rhs)
+{
+	t_expr *expr = malloc(sizeof(t_expr));
+
+	expr->binop = t_binop_init(lhs, op, rhs);
+	expr->type = 2;
+
+	return expr;
+}
+
+t_expr *t_expr_init3(t_decl_spec *decl_spec)
+{
+	t_expr *expr = malloc(sizeof(t_expr));
+
+	expr->decl_spec = decl_spec;
+	expr->type = 3;
+
+	return expr;
+}
+
+t_numeric *t_numeric_init0(char *cint)
+{
+	t_numeric *n = malloc(sizeof(t_numeric));
+
+	n->cint = atoi(cint);
+	n->type = 0;
+	
+	return n;
+}
+
+t_numeric *t_numeric_init1(char *cdouble)
+{
+	t_numeric *n = malloc(sizeof(t_numeric));
+
+	n->cdouble = atof(cdouble);
+	n->type = 1;
+
+	return n;
+}
+
+t_decl_spec *t_decl_spec_init(int type, t_declr *decl)
+{
+	t_decl_spec *decl_spec = malloc(sizeof(t_decl_spec));
+
+	decl_spec->type_name = type;
+	decl_spec->declarator = decl;	
+
+	return decl_spec;
+}
+
+t_declr *t_declr_init(int n_ptr, t_dir_declr *ddecl)
+{
+	t_declr *declr = malloc(sizeof(t_declr));
+
+	declr->ptr = n_ptr;
+	declr->ddecl = ddecl;
+
+	return declr;
+}
+
+t_dir_declr *t_dir_declr_init0(t_ident *ident)
+{
+	t_dir_declr *ddecl = malloc(sizeof(t_dir_declr));
+
+	ddecl->ident = ident;
+	ddecl->type = 0;	
+
+	return ddecl;
+}
+
+t_dir_declr *t_dir_declr_init1(t_declr *decl)
+{
+	t_dir_declr *ddecl = malloc(sizeof(t_dir_declr));
+
+	ddecl->decl = decl;
+	ddecl->type = 1;
+
+	return ddecl;
+}
+
+t_block *t_block_init(t_stmt *stmt)
+{
+	t_block *block = malloc(sizeof(t_block));
+
+	block->statements = NULL;
+	block->num_statements = 0;
+	if (stmt) t_block_add(block, stmt);
+	
+	return block;
+}
+
+t_block *t_block_add(t_block *block, t_stmt *statement)
+{
+	block->num_statements++;
+	if (block->num_statements==1) {
+		block->statements = malloc(sizeof(t_stmt*));
+	} else {
+		block->statements = realloc(block->statements, sizeof(t_stmt*) *block->num_statements);
+	}
+	block->statements[block->num_statements-1] = statement;
+
+	return block;
+}
+
+t_stmt *t_stmt_init0(t_block *block)
+{
+	t_stmt *statement = malloc(sizeof(t_stmt));
+
+	statement->type = 0;
+	statement->block = block;
+
+	return statement;
+}
+
+t_stmt *t_stmt_init1(t_decl_spec *declaration)
+{
+	t_stmt *statement = malloc(sizeof(t_stmt));
+
+	statement->type = 1;
+	statement->declaration = declaration;
+
+	return statement;
+}
+
+t_stmt * t_stmt_init2(t_expr *expr)
+{
+	t_stmt *statement = malloc(sizeof(t_stmt));
+
+	statement->type = 2;
+	statement->expression = expr;
+
+	return statement;
+}
+
+/*Printing Functions*/
+
+void t_block_print(t_block *block)
+{
+	if (!block) return;
+	for (int i = (block->num_statements-1); i >= 0; i--) {
+		t_stmt_print(block->statements[i]);
+		printf("\n");
+	}
+}
+
+void t_stmt_print(t_stmt *statement)
+{
+	if (!statement) return;
+	switch (statement->type) {
+		case 0:
+			t_block_print(statement->block);
+			break;
+		case 1:
+			t_decl_spec_print(statement->declaration);
+			break;
+		case 2:
+			t_expr_print(statement->expression);
+			break;
+	}
+}
+
+void t_expr_print(t_expr *expr)
+{
+	if (!expr) return;
+
+	switch (expr->type) {
+		case 0:
+			printf("%s", expr->ident->ident);
+			break;
+		case 1:
+			t_num_print(expr->cnumeric);
+			break;
+		case 2:
+			t_binop_print(expr->binop);
+			break;
+		case 3:
+			t_decl_spec_print(expr->decl_spec);
+			break;
+	}
+}
+
+void t_binop_print(t_binop *bin)
+{
+	if (!bin) return;
+
+	printf("(");
+	t_expr_print(bin->lhs);
+	
+	switch(bin->op) {
+		case oper_assign:
+			printf("=");
+			break;
+		case oper_add:
+			printf("+");
+			break;
+		case oper_sub:
+			printf("-");
+			break;
+		case oper_mult:
+			printf("*");
+			break;
+		case oper_div:
+			printf("/");
+	}
+	
+	t_expr_print(bin->rhs);
+	printf(")");
+}
+
+void t_num_print(t_numeric *num)
+{
+	if (!num) return;
+
+	if (num->type == 0) printf("%lld", num->cint);
+	else printf("%f", num->cdouble);
+}
+
+
+void t_decl_spec_print(t_decl_spec *decl_spec)
+{
+	switch (decl_spec->type_name) {
+		case type_signed_int:
+			printf("int ");
+			break;
+		case type_unsigned_int:
+			printf("unsigned int ");
+			break;
+		case type_signed_char:
+			printf("char ");
+			break;
+		case type_unsigned_char:
+			printf("unsigned char ");
+			break;
+		case type_unsigned_long:
+			printf("unsigned long ");
+			break;
+		case type_signed_long:
+			printf("long ");
+			break;
+		case type_signed_short:
+			printf("short ");
+			break;
+		case type_unsigned_short:
+			printf("unsigned short ");
+			break;
+		case type_float:
+			printf("float ");
+			break;
+		case type_double:
+			printf("double ");
+			break;
+	}
+	t_declr_print(decl_spec->declarator);
+}
+
+void t_declr_print(t_declr *declr)
+{
+	if (!declr) return;
+
+	for (int i = 0; i < declr->ptr; i++) printf("*");
+	t_dir_declr_print(declr->ddecl);
+
+}
+
+void t_dir_declr_print(t_dir_declr *ddeclr)
+{
+	if (!ddeclr) return;
+	if (ddeclr->type == 0) printf("%s", ddeclr->ident->ident);
+	else t_declr_print(ddeclr->decl);
+}
+
