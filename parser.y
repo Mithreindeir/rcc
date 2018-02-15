@@ -1,6 +1,6 @@
 %{
 	#include <stdio.h>
-	#include "node.h"
+	#include "ast.h"
 	#define YYERROR_VERBOSE
 	
 	t_block *main_block;
@@ -75,8 +75,8 @@ stmt
 	;
 
 cond_stmt
-	: T_IF T_LPAREN asn_expr T_RPAREN block T_ELSE block { $$ = t_conditional_stmt_init($3, $5, $7); }
-	| T_IF T_LPAREN asn_expr T_RPAREN block { $$ = t_conditional_stmt_init($3, $5, NULL); }
+	: T_IF T_LPAREN asn_expr T_RPAREN stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), NULL); }
+	| T_IF T_LPAREN asn_expr T_RPAREN stmt T_ELSE stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), t_block_init($7)); }
 	;
 /*
 expr	

@@ -1,4 +1,4 @@
-#include "rcc.h"
+#include "threecode.h"
 
 block_ctx *block_ctx_init(block_ctx *parent)
 {
@@ -326,33 +326,10 @@ void tac_instr_print(tac_instr *instr)
 }
 
 
-
-void t_block_3pass(block_ctx *p, t_block *block)
-{
-	if (!block) return;
-	block_ctx * ctx = NULL;
-	if (!p)
-		ctx = block_ctx_init(p);
-	else ctx = p;
-	for (int i = (block->num_statements-1); i >= 0; i--) {
-		t_stmt_3pass(ctx, block->statements[i]);
-	}
-	
-	//tac_instr_print(ctx->start);
-	if (!p) {
-		tac_instr_print(ctx->start);
-		printf("\n");
-	}
-}
-
+/*Three address code from conditional statement
+*/
 tac_instr *tac_from_cstmt(block_ctx *ctx, t_conditional_stmt *cstmt, int label)
 {
-/*
-			tac_operand *clhs;
-			int operator_t;
-			tac_operand *crhs;
-			int clabel;
-*/
 	tac_instr *tac = malloc(sizeof(tac_instr));
 
 	tac->tac_type = TAC_CONDJMP;
@@ -369,18 +346,35 @@ tac_instr *tac_from_cstmt(block_ctx *ctx, t_conditional_stmt *cstmt, int label)
 	return tac;
 }
 
-void t_stmt_3pass(block_ctx *ctx, t_stmt *statement)
+void t_block_convert(block_ctx *p, t_block *block)
+{
+	if (!block) return;
+	block_ctx * ctx = NULL;
+	if (!p)
+		ctx = block_ctx_init(p);
+	else ctx = p;
+	for (int i = (block->num_statements-1); i >= 0; i--) {
+		t_stmt_convert(ctx, block->statements[i]);
+	}
+	//tac_instr_print(ctx->start);
+	if (!p) {
+		tac_instr_print(ctx->start);
+		printf("\n");
+	}
+}
+
+void t_stmt_convert(block_ctx *ctx, t_stmt *statement)
 {
 	if (!statement) return;
 	switch (statement->type) {
 		case 0:
-			t_block_3pass(ctx, statement->block);
+			t_block_convert(ctx, statement->block);
 			break;
 		case 1:
 			//block_ctx_add_decl(ctx, statement->declaration);
 			break;
 		case 2:
-			t_expr_3pass(ctx, statement->expression);
+			t_expr_convert(ctx, statement->expression);
 			break;
 		case 3://if statements
 			;
@@ -388,43 +382,46 @@ void t_stmt_3pass(block_ctx *ctx, t_stmt *statement)
 			tac_instr *label1 = tac_new_label(ctx);
 			tac_instr *label2 = NULL;
 			if (statement->cstmt->otherwise) label2 = tac_new_label(ctx);
-			t_expr_3pass(ctx, statement->cstmt->condition);
+			t_expr_convert(ctx, statement->cstmt->condition);
 			tac_instr *condjmp = tac_from_cstmt(ctx, statement->cstmt, label1->label);
 			block_ctx_apphend_instr(ctx, condjmp);
-			t_block_3pass(ctx, statement->cstmt->block);
+			t_block_convert(ctx, statement->cstmt->block);
 			if (label2) block_ctx_apphend_instr(ctx, tac_goto(ctx, label2->label));
 			block_ctx_apphend_instr(ctx, label1);
 			
 			if (label2) {
-				t_block_3pass(ctx, statement->cstmt->otherwise);
+				t_block_convert(ctx, statement->cstmt->otherwise);
 				block_ctx_apphend_instr(ctx, label2);
 			}
-
 			break;
 	}
 }
 
-void t_expr_3pass(block_ctx *ctx, t_expr *expr)
+/*
+Calculate three address codes for leafs first, then assign interior nodes
+a unique temporary value and use that to generate more  
+*/
+void t_expr_convert(block_ctx *ctx, t_expr *expr)
 {
 	if (!expr) return;
-	//If expression in binary operator
+
 	tac_instr *tac = NULL;
+
 	if (expr->type == 2) {
-		//If both operands are leafs then create instr
 		if ((expr->binop->lhs->type != 2 && expr->binop->lhs->type != 4) && (expr->binop->rhs->type != 2 && expr->binop->rhs->type != 4)) {
 			tac=tac_from_binop(ctx, expr->binop);
 			block_ctx_apphend_instr(ctx, tac);
 		} else if (expr->binop->lhs->type != 2 && expr->binop->lhs->type != 4) {
-			t_expr_3pass(ctx, expr->binop->rhs);
+			t_expr_convert(ctx, expr->binop->rhs);
 			tac=tac_from_binop(ctx, expr->binop);
 			block_ctx_apphend_instr(ctx, tac);
 		} else if (expr->binop->rhs->type != 2 && expr->binop->rhs->type != 4) {
-			t_expr_3pass(ctx, expr->binop->lhs);
+			t_expr_convert(ctx, expr->binop->lhs);
 			tac=tac_from_binop(ctx, expr->binop);
 			block_ctx_apphend_instr(ctx, tac);
 		} else {
-			t_expr_3pass(ctx, expr->binop->lhs);
-			t_expr_3pass(ctx, expr->binop->rhs);
+			t_expr_convert(ctx, expr->binop->lhs);
+			t_expr_convert(ctx, expr->binop->rhs);
 			tac=tac_from_binop(ctx, expr->binop);
 			block_ctx_apphend_instr(ctx, tac);
 		}
@@ -434,7 +431,7 @@ void t_expr_3pass(block_ctx *ctx, t_expr *expr)
 			tac = tac_from_unop(ctx, expr->unop);
 			block_ctx_apphend_instr(ctx, tac);
 		} else {
-			t_expr_3pass(ctx, expr->unop->term);
+			t_expr_convert(ctx, expr->unop->term);
 			tac = tac_from_unop(ctx, expr->unop);
 			block_ctx_apphend_instr(ctx, tac);
 		}

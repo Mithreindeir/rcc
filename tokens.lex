@@ -1,6 +1,6 @@
 %{
 	#include <stdio.h>
-	#include "node.h"
+	#include "ast.h"
 	#include "parser.h"
 	#define SAVE_TOKEN yylval.string = strndup(yytext, yyleng)
 	#define TOKEN(t) (yylval.token = t)

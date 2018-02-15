@@ -1,13 +1,13 @@
-#ifndef RCC_H
-#define RCC_H
+#ifndef QUAD_H
+#define QUAD_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "node.h"
+#include "ast.h"
 
-/* There Are Several Passes on the AST to get it ready for code generation.
-   First error and type checking, then reordering of expressions into simpler versions.
+/* Lower Level IR converted from AST
+   Naive Three address Code
 */
 
 typedef struct block_ctx block_ctx;
@@ -68,6 +68,7 @@ struct tac_instr
 	tac_instr * next;
 };
 
+//Block Context
 struct block_ctx
 {
 	//Parent block context
@@ -113,8 +114,8 @@ char *expr_string(block_ctx *ctx, t_expr *expr);
 
 void tac_instr_print(tac_instr *instr);
 
-void t_block_3pass(block_ctx *p, t_block *block);
-void t_stmt_3pass(block_ctx *ctx, t_stmt *statement);
-void t_expr_3pass(block_ctx *ctx, t_expr *expr);
+void t_block_convert(block_ctx *p, t_block *block);
+void t_stmt_convert(block_ctx *ctx, t_stmt *statement);
+void t_expr_convert(block_ctx *ctx, t_expr *expr);
 
 #endif

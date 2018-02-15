@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "node.h"
-#include "rcc.h"
+#include "ast.h"
+#include "threecode.h"
 
 void syntax_error(char * message);
 int compatible_decl(t_decl_spec *d1, t_decl_spec *d2);
