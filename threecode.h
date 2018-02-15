@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
+#include "symtable.h"
 
 /* Lower Level IR converted from AST
    Naive Three address Code

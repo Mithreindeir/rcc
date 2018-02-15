@@ -1,9 +1,12 @@
 %{
 	#include <stdio.h>
 	#include "ast.h"
+	#include "symtable.h"
+
 	#define YYERROR_VERBOSE
 	
 	t_block *main_block;
+	symbol_table *global_table;
 
 	extern int yylex();
 	void yyerror(const char *s) { printf("ERROR: %s\n", s); }
@@ -120,7 +123,13 @@ asn_op
 	;
 
 primary
-	: ident { $$ = t_expr_init0($1); }
+	: ident
+		{
+			if (!symbol_table_lookup(global_table, $1->ident)) {
+				yyerror("Symbol Not Defined\n");
+			}
+			$$ = t_expr_init0($1);
+		}
 	| const { $$ = t_expr_init1($1); }
 	| T_LPAREN eq_expr T_RPAREN { $$ = $2; }
 	;
@@ -168,7 +177,13 @@ type_spec
 	;
 
 decl_spec
-	: type_spec declr { $$ = t_decl_spec_init($1, $2); }
+	: type_spec declr
+		{
+			$$ = t_decl_spec_init($1, $2);
+			if (symbol_table_insert_decl_spec(global_table, $$)) {
+				yyerror("Redeclaration\n");
+			}
+		}
 	;
 
 declr
