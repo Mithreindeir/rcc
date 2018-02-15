@@ -9,7 +9,16 @@ enum operators {
 	oper_sub,
 	oper_mult,
 	oper_div,
-	oper_assign
+	oper_equal,
+	oper_notequal,
+	oper_ref,
+	oper_deref,
+	oper_assign,
+	oper_incpost,
+	oper_incpre,
+	oper_decpost,
+	oper_decpre,
+	oper_neg
 };
 
 enum type_names {
@@ -47,6 +56,7 @@ typedef struct t_block t_block;
 typedef struct t_func_def t_func_def;
 typedef struct t_stmt t_stmt;
 typedef struct t_param_list t_param_list;
+typedef struct t_conditional_stmt t_conditional_stmt;
 
 struct t_call
 {
@@ -61,7 +71,7 @@ struct t_func_def
 {
 	t_decl_spec *decl_spec;
 	t_param_list *parameter;
-	t_block *block;	
+	t_block *block;
 };
 
 struct t_param_list
@@ -72,9 +82,20 @@ struct t_param_list
 
 t_call *t_call_init(t_ident *ident, t_expr **expr_l, int num_expr);
 
+struct t_conditional_stmt
+{
+	t_expr *condition;
+	t_block *block;
+	t_block *otherwise;
+};
+
+t_conditional_stmt *t_conditional_stmt_init(t_expr *condition, t_block *block, t_block *otherwise);
+
 struct t_ident
 {
 	char *ident;
+	//Type information to be filled with later steps
+	t_decl_spec *decl_spec;
 };
 
 t_ident *t_ident_init(char *ident);
@@ -91,7 +112,7 @@ t_binop *t_binop_init(t_expr *lhs, int op, t_expr *rhs);
 struct t_unop
 {
 	int op;
-	t_expr *s;
+	t_expr *term;
 };
 
 t_unop *t_unop_init(int op, t_expr *s);
@@ -103,14 +124,19 @@ struct t_expr
 		t_numeric *cnumeric;
 		t_binop *binop;
 		t_decl_spec *decl_spec;
+		t_unop *unop;
 	};
 	int type;
+	//For Code Generation
+	int virt_reg;
+
 };
 
 t_expr *t_expr_init0(t_ident *ident);
 t_expr *t_expr_init1(t_numeric *num);
 t_expr *t_expr_init2(t_expr *lhs, int op, t_expr *rhs);
 t_expr *t_expr_init3(t_decl_spec *decl_spec);
+t_expr *t_expr_init4(t_expr *term, int oper);
 
 struct t_numeric
 {
@@ -165,7 +191,8 @@ struct t_stmt
 	union {
 		t_block *block;
 		t_decl_spec *declaration;
-		t_expr *expression;				
+		t_expr *expression;
+		t_conditional_stmt *cstmt;		
 	};
 	int type;
 };
@@ -173,14 +200,15 @@ struct t_stmt
 t_stmt *t_stmt_init0(t_block *block);
 t_stmt *t_stmt_init1(t_decl_spec *declaration);
 t_stmt *t_stmt_init2(t_expr *expr);
+t_stmt *t_stmt_init3(t_conditional_stmt *cstmt);
 
 /*Print Functions*/
-
 void t_block_print(t_block *block);
 void t_stmt_print(t_stmt *statement);
 void t_expr_print(t_expr *expr);
 void t_num_print(t_numeric *num);
 void t_binop_print(t_binop *bin);
+void t_unop_print(t_unop *unop);
 void t_decl_spec_print(t_decl_spec *decl_spec);
 void t_declr_print(t_declr *declr);
 void t_dir_declr_print(t_dir_declr *ddeclr);

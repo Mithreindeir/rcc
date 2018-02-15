@@ -11,8 +11,8 @@
 
 %%
 [ \t\n]			;
-[0-9]+.[0-9]+		SAVE_TOKEN; return T_CDOUBLE;
 [0-9]+			SAVE_TOKEN; return T_CINT;
+[0-9]+.[0-9]+	SAVE_TOKEN; return T_CDOUBLE;
 "if"			return TOKEN(T_IF);
 "else"			return TOKEN(T_ELSE);
 "for"			return TOKEN(T_FOR);
@@ -25,11 +25,14 @@
 "signed"		return TOKEN(T_SIGNED);
 "unsigned"		return TOKEN(T_UNSIGNED);
 [a-zA-Z_][a-zA-Z0-9_]*	SAVE_TOKEN; return T_IDENT;
+"&"			return TOKEN(T_BAND);
 "="			return TOKEN(T_ASN);
-"=="			return TOKEN(T_EQ);
-"!="			return TOKEN(T_NEQ);
+"=="		return TOKEN(T_EQ);
+"++"		return TOKEN(T_INC);
+"--"		return TOKEN(T_DEC); 
+"!="		return TOKEN(T_NEQ);
 "<"			return TOKEN(T_LT);
-"<="			return TOKEN(T_LTE);
+"<="		return TOKEN(T_LTE);
 "("			return TOKEN(T_LPAREN);
 ")"			return TOKEN(T_RPAREN);
 "{"			return TOKEN(T_LCBRK);

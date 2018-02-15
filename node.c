@@ -11,11 +11,23 @@ t_call *t_call_init(t_ident *ident, t_expr **expr_l, int num_expr)
 	return call;
 }
 
+t_conditional_stmt *t_conditional_stmt_init(t_expr *condition, t_block *block, t_block *otherwise)
+{
+	t_conditional_stmt *cstmt = malloc(sizeof(t_conditional_stmt));
+
+	cstmt->condition = condition;
+	cstmt->block = block;
+	cstmt->otherwise = otherwise;
+
+	return cstmt;
+}
+
 t_ident *t_ident_init(char *ident)
 {
 	t_ident *idnt = malloc(sizeof(t_ident));
 
 	idnt->ident = ident;
+	idnt->decl_spec = NULL;
 
 	return idnt;
 }
@@ -31,12 +43,23 @@ t_binop *t_binop_init(t_expr *lhs, int op, t_expr *rhs)
 	return binop;
 }
 
+t_unop *t_unop_init(int op, t_expr *s)
+{
+	t_unop *unop = malloc(sizeof(t_unop));
+
+	unop->term = s;
+	unop->op = op;
+
+	return unop;
+}
+
 t_expr *t_expr_init0(t_ident *ident)
 {
 	t_expr *expr = malloc(sizeof(t_expr));
 
 	expr->ident = ident;
 	expr->type = 0;
+	expr->virt_reg = -1;
 
 	return expr;
 }
@@ -47,6 +70,7 @@ t_expr *t_expr_init1(t_numeric *num)
 
 	expr->cnumeric = num;
 	expr->type = 1;
+	expr->virt_reg = -1;
 
 	return expr;
 }
@@ -57,6 +81,7 @@ t_expr *t_expr_init2(t_expr *lhs, int op, t_expr *rhs)
 
 	expr->binop = t_binop_init(lhs, op, rhs);
 	expr->type = 2;
+	expr->virt_reg = -1;
 
 	return expr;
 }
@@ -67,6 +92,18 @@ t_expr *t_expr_init3(t_decl_spec *decl_spec)
 
 	expr->decl_spec = decl_spec;
 	expr->type = 3;
+	expr->virt_reg = -1;
+
+	return expr;
+}
+
+t_expr *t_expr_init4(t_expr * term, int oper)
+{
+	t_expr *expr = malloc(sizeof(t_expr));
+
+	expr->unop = t_unop_init(oper, term);
+	expr->type = 4;
+	expr->virt_reg = -1;
 
 	return expr;
 }
@@ -185,6 +222,16 @@ t_stmt * t_stmt_init2(t_expr *expr)
 	return statement;
 }
 
+t_stmt *t_stmt_init3(t_conditional_stmt *cstmt)
+{
+	t_stmt *statement = malloc(sizeof(t_stmt));
+
+	statement->type = 3;
+	statement->cstmt = cstmt;
+
+	return statement;
+}
+
 /*Printing Functions*/
 
 void t_block_print(t_block *block)
@@ -229,6 +276,9 @@ void t_expr_print(t_expr *expr)
 		case 3:
 			t_decl_spec_print(expr->decl_spec);
 			break;
+		case 4:
+			t_unop_print(expr->unop);
+			break;
 	}
 }
 
@@ -236,9 +286,7 @@ void t_binop_print(t_binop *bin)
 {
 	if (!bin) return;
 
-	printf("(");
 	t_expr_print(bin->lhs);
-	
 	switch(bin->op) {
 		case oper_assign:
 			printf("=");
@@ -255,9 +303,32 @@ void t_binop_print(t_binop *bin)
 		case oper_div:
 			printf("/");
 	}
-	
 	t_expr_print(bin->rhs);
-	printf(")");
+}
+
+void t_unop_print(t_unop *unop)
+{
+	if (!unop) return;
+
+	switch (unop->op) {
+		case oper_incpost:
+			printf("++");
+			break;
+		case oper_incpre:
+			printf("++");
+			break;
+		case oper_decpost:
+			printf("--");
+			break;
+		case oper_decpre:
+			printf("--");
+			break;
+		case oper_neg:
+			printf("-");
+			break;
+	}
+	t_expr_print(unop->term);
+
 }
 
 void t_num_print(t_numeric *num)

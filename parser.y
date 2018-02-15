@@ -16,6 +16,7 @@
 	t_declr *declr;
 	t_dir_declr *ddeclr;
 	t_decl_spec *decl_spec;
+	t_conditional_stmt * cstmt;
 	t_block *block;
 	t_stmt *statement;
 	char *string;
@@ -29,22 +30,24 @@
 %token <token> T_ASN T_EQ T_NEQ T_LT T_LTE T_LPAREN
 %token <token> T_RPAREN T_LCBRK T_RCBRK T_DOT T_COMMA
 %token <token> T_MUL T_DIV T_PLUS T_SUB
+%token <token> T_INC T_DEC
 %token <token> T_SEMIC T_VOID T_CHAR T_SHORT T_INT T_LONG
 %token <token> T_SIGNED T_UNSIGNED T_FLOAT T_DOUBLE
-%token <token> T_IF T_ELSE T_FOR T_WHILE
+%token <token> T_IF T_ELSE T_FOR T_WHILE T_BAND
 
 
 %type <cnumeric> const
-%type <expr> primary expr eq_expr add_expr mul_expr asn_expr init
+%type <expr> primary expr eq_expr add_expr mul_expr asn_expr init unary postfix
 %type <ident> ident
-%type <oper> asn_op
+%type <oper> asn_op uni_op
 %type <type> type_spec
 %type <ptr> pointer
 %type <declr> declr
 %type <ddeclr> dir_declr
 %type <decl_spec> decl_spec
-%type <block> block cond_stmt
+%type <block> block
 %type <statement> stmt
+%type <cstmt> cond_stmt
 
 /*Operator Precedence*/
 %left T_ASN
@@ -68,12 +71,12 @@ stmt
 	: init T_SEMIC { $$ = t_stmt_init2($1); }
 	| asn_expr T_SEMIC { $$ = t_stmt_init2($1); }
 	| T_LCBRK block T_RCBRK { $$ = t_stmt_init0($2); }
-	| cond_stmt { $$ = t_stmt_init0($1);  }
+	| cond_stmt { $$ = t_stmt_init3($1);  }
 	;
 
 cond_stmt
-	: T_IF T_LPAREN asn_expr T_RPAREN block { $$ = $5; }
-	//| T_IF T_LPAREN asn_expr T_RPAREN block T_ELSE block { $$ = $5; }
+	: T_IF T_LPAREN asn_expr T_RPAREN block T_ELSE block { $$ = t_conditional_stmt_init($3, $5, $7); }
+	| T_IF T_LPAREN asn_expr T_RPAREN block { $$ = t_conditional_stmt_init($3, $5, NULL); }
 	;
 /*
 expr	
@@ -89,7 +92,27 @@ init
 	
 asn_expr
 	: eq_expr
-	| primary asn_op asn_expr { $$ = t_expr_init2($1, $2, $3); }
+	| unary asn_op asn_expr { $$ = t_expr_init2($1, $2, $3); }
+	;
+
+unary
+	: postfix { $$ = $1; }
+	| T_INC  unary { $$ = t_expr_init4($2, oper_incpre); }
+	| T_DEC  unary { $$ = t_expr_init4($2, oper_decpre); }
+	| uni_op unary { $$ = t_expr_init4($2, $1); }
+	;
+
+uni_op
+	: T_SUB { $$ = oper_neg; }
+	| T_MUL { $$ = oper_deref; }
+	| T_BAND { $$ = oper_ref; }
+	;
+
+
+postfix
+	: primary { $$ = $1; }
+	| postfix T_INC { $$ = t_expr_init4($1, oper_incpost); }
+	| postfix T_DEC { $$ = t_expr_init4($1, oper_decpost); }
 	;
 
 asn_op
@@ -113,8 +136,8 @@ const
 
 eq_expr
 	: add_expr
-	| eq_expr T_EQ eq_expr { $$ = t_expr_init2($1, $2, $3); }
-	| eq_expr T_NEQ eq_expr { $$ = t_expr_init2($1, $2, $3); }
+	| eq_expr T_EQ eq_expr { $$ = t_expr_init2($1, oper_equal, $3); }
+	| eq_expr T_NEQ eq_expr { $$ = t_expr_init2($1, oper_notequal, $3); }
 	;
 
 add_expr
@@ -124,9 +147,9 @@ add_expr
 	;
 
 mul_expr
-	: primary
-	| mul_expr T_MUL primary { $$ = t_expr_init2($1, oper_mult, $3); }
-	| mul_expr T_DIV primary { $$ = t_expr_init2($1, oper_div, $3); }
+	: unary
+	| mul_expr T_MUL unary { $$ = t_expr_init2($1, oper_mult, $3); }
+	| mul_expr T_DIV unary { $$ = t_expr_init2($1, oper_div, $3); }
 	;
 
 type_spec
