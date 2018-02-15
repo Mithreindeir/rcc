@@ -41,6 +41,8 @@ typedef struct tac_operand
 		char * constant_value;
 		int temp_register;
 	};
+	int ptr_access;
+	
 	int tac_type;
 } tac_operand;
 

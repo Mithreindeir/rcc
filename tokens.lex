@@ -17,6 +17,7 @@
 "else"			return TOKEN(T_ELSE);
 "for"			return TOKEN(T_FOR);
 "while"			return TOKEN(T_WHILE);
+"do"			return TOKEN(T_DO);
 "void"			return TOKEN(T_VOID);
 "char"			return TOKEN(T_CHAR);
 "short"			return TOKEN(T_SHORT);
@@ -36,6 +37,8 @@
 "!="		return TOKEN(T_NEQ);
 "<"			return TOKEN(T_LT);
 "<="		return TOKEN(T_LTE);
+">"			return TOKEN(T_GT);
+"=>"		return TOKEN(T_GTE);
 "("			return TOKEN(T_LPAREN);
 ")"			return TOKEN(T_RPAREN);
 "{"			return TOKEN(T_LCBRK);

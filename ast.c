@@ -35,6 +35,18 @@ t_iterative_stmt *t_iterative_stmt_init0(t_expr *init, t_expr *cond, t_expr *ite
 	return its;
 }
 
+t_iterative_stmt *t_iterative_stmt_init1(t_expr *cond, t_block *block, int first)
+{
+	t_iterative_stmt *its = malloc(sizeof(t_iterative_stmt));
+
+	its->first = first;
+	its->cond = cond;
+	its->block = block;
+	its->type = 1;
+
+	return its;	
+}
+
 t_ident *t_ident_init(char *ident)
 {
 	t_ident *idnt = malloc(sizeof(t_ident));
@@ -73,6 +85,8 @@ t_expr *t_expr_init0(t_ident *ident)
 	expr->ident = ident;
 	expr->type = 0;
 	expr->virt_reg = -1;
+	expr->num_ptr = 0;
+	expr->type_name = 0;
 
 	return expr;
 }
@@ -84,6 +98,8 @@ t_expr *t_expr_init1(t_numeric *num)
 	expr->cnumeric = num;
 	expr->type = 1;
 	expr->virt_reg = -1;
+	expr->num_ptr = 0;
+	expr->type_name = 0;
 
 	return expr;
 }
@@ -95,6 +111,8 @@ t_expr *t_expr_init2(t_expr *lhs, int op, t_expr *rhs)
 	expr->binop = t_binop_init(lhs, op, rhs);
 	expr->type = 2;
 	expr->virt_reg = -1;
+	expr->num_ptr = 0;
+	expr->type_name = 0;
 
 	return expr;
 }
@@ -106,6 +124,8 @@ t_expr *t_expr_init3(t_decl_spec *decl_spec)
 	expr->decl_spec = decl_spec;
 	expr->type = 3;
 	expr->virt_reg = -1;
+	expr->num_ptr = 0;
+	expr->type_name = 0;
 
 	return expr;
 }
@@ -117,6 +137,8 @@ t_expr *t_expr_init4(t_expr * term, int oper)
 	expr->unop = t_unop_init(oper, term);
 	expr->type = 4;
 	expr->virt_reg = -1;
+	expr->num_ptr = 0;
+	expr->type_name = 0;
 
 	return expr;
 }
@@ -203,6 +225,21 @@ t_block *t_block_add(t_block *block, t_stmt *statement)
 	block->statements[block->num_statements-1] = statement;
 
 	return block;
+}
+
+t_block *t_block_merge(t_block *b1, t_block *b2)
+{
+	int olds = b1->num_statements;
+	b1->num_statements += b2->num_statements;
+	b1->statements = realloc(b1->statements, sizeof(t_stmt*) * b1->num_statements);
+
+	for (int i = 0; i < b2->num_statements; i++) {
+		b1->statements[olds+i] = b2->statements[i];
+	}
+
+	free(b2->statements);
+	free(b2);
+	return b1;
 }
 
 t_stmt *t_stmt_init0(t_block *block)
@@ -361,7 +398,6 @@ void t_num_print(t_numeric *num)
 	if (num->type == 0) printf("%lld", num->cint);
 	else printf("%f", num->cdouble);
 }
-
 
 void t_decl_spec_print(t_decl_spec *decl_spec)
 {

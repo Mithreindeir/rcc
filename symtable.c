@@ -120,7 +120,9 @@ void symbol_table_destroy(symbol_table *symt)
 		symbol *head = symt->symbols[i];
 		while (head) {
 			symbol *n = head->next;
-			printf("Symbol: %s\n", head->ident);
+			printf("Symbol: %s Type: ", head->ident);
+			print_type(head->type.type_name);
+			printf(" nptr: %d\n", head->type.num_ptr);
 			free(head->ident);
 			free(head);
 			head = n;
@@ -129,4 +131,40 @@ void symbol_table_destroy(symbol_table *symt)
 
 	free(symt->symbols);
 	free(symt);
+}
+
+void print_type(int type)
+{
+	switch (type) {
+		case type_signed_int:
+			printf("int ");
+			break;
+		case type_unsigned_int:
+			printf("unsigned int ");
+			break;
+		case type_signed_char:
+			printf("char ");
+			break;
+		case type_unsigned_char:
+			printf("unsigned char ");
+			break;
+		case type_unsigned_long:
+			printf("unsigned long ");
+			break;
+		case type_signed_long:
+			printf("long ");
+			break;
+		case type_signed_short:
+			printf("short ");
+			break;
+		case type_unsigned_short:
+			printf("unsigned short ");
+			break;
+		case type_float:
+			printf("float ");
+			break;
+		case type_double:
+			printf("double ");
+			break;
+	}
 }

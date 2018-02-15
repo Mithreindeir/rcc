@@ -137,6 +137,18 @@ char *oper_string(int oper)
 		case oper_equal:
 			str = "==";
 			break;
+		case oper_lt:
+			str = "<";
+			break;
+		case oper_lte:
+			str = "<=";
+			break;
+		case oper_gt:
+			str = ">";
+			break;
+		case oper_gte:
+			str = ">=";
+			break;
 		case oper_notequal:
 			str = "!=";
 			break;
@@ -182,6 +194,9 @@ enum tac_types
 
 void tac_operand_print(tac_operand *opr)
 {
+	if (opr->ptr_access)
+		printf("*");
+	
 	if (opr->tac_type == TAC_IDENT) {
 		printf("%s", opr->identifier);
 	} else if (opr->tac_type == TAC_CONST) {
@@ -196,6 +211,7 @@ tac_operand *tac_opr_from_expr(block_ctx *ctx, t_expr *expr)
 	if (!expr) return NULL;
 
 	tac_operand *opr = malloc(sizeof(tac_operand));
+	opr->ptr_access = 0;
 
 	if (expr->virt_reg != -1) {
 		opr->temp_register = expr->virt_reg;
@@ -215,11 +231,19 @@ tac_operand *tac_opr_from_expr(block_ctx *ctx, t_expr *expr)
 	} else if (expr->type == 3) {
 		opr->identifier = strdup(get_decl_name(expr->decl_spec));
 		opr->tac_type = TAC_IDENT;
+	} else if (expr->type == 4 && expr->unop->op == oper_deref) {
+		opr->ptr_access = 1;
+		if (expr->unop->term->type == 0) {
+			opr->identifier = strdup(expr->unop->term->ident->ident);
+			opr->tac_type = TAC_IDENT;
+		}
 	} else {
 		printf("FATAL ERROR: NOT LEAF\n");
 		exit(1);
 	}
-
+	if (expr->type == 4 && expr->unop->op == oper_deref) {
+		opr->ptr_access = 1;
+	}
 	return opr;
 }
 
@@ -251,6 +275,9 @@ tac_instr *tac_from_binop(block_ctx *ctx, t_binop *binop)
 	if (binop->op == oper_assign) {
 		tac->tac_type = TAC_COPY;
 		tac->lhs = tac_opr_from_expr(ctx, binop->lhs);
+		//If lhs is a dereferenced pointer, then type is ptr assign
+		if (binop->lhs->type == 4 && binop->lhs->unop->op == oper_deref)
+			tac->tac_type = TAC_PTR_ASN;
 		tac->operator_t = oper_assign;
 		tac->rhs = tac_opr_from_expr(ctx, binop->rhs);
 	} else {
@@ -273,6 +300,7 @@ tac_instr *tac_from_unop(block_ctx *ctx, t_unop *unop)
 	tac->temp_dst = tac_opr_temp(ctx);
 	tac->operator_t = unop->op;
 	tac->rhs = tac_opr_from_expr(ctx, unop->term);
+	//If pointer arithmetic then create an instruction multiplying
 
 	return tac;
 }
@@ -321,6 +349,11 @@ void tac_instr_print(tac_instr *instr)
 		printf(".L%d", instr->clabel);
 	} else if (instr->tac_type == TAC_GOTO) {
 		printf("goto .L%d", instr->label);
+	} else if (instr->tac_type == TAC_PTR_ASN) {
+		//*x = y
+		tac_operand_print(instr->lhs);
+		printf(" %s ", oper_string(instr->operator_t));
+		tac_operand_print(instr->rhs);		
 	}
 	printf("\n");
 
@@ -360,7 +393,7 @@ tac_instr *tac_from_itstmt(block_ctx *ctx, t_iterative_stmt *itstmt, int label)
 		tac->tac_type = TAC_GOTO;
 		tac->label = label;
 	} else {
-		tac->coperator_t = oper_equal;
+		tac->coperator_t = oper_notequal;
 		tac->clabel = label;
 		tac->crhs = malloc(sizeof(tac_operand));
 		char buf[16];
@@ -432,10 +465,23 @@ void t_stmt_convert(block_ctx *ctx, t_stmt *statement)
 				block_ctx_apphend_instr(ctx, tac_goto(ctx, compares->label));
 				block_ctx_apphend_instr(ctx, block_start);
 				t_block_convert(ctx, statement->itstmt->block);
-				block_ctx_apphend_instr(ctx, compares);
 				t_expr_convert(ctx, statement->itstmt->iter);
+				block_ctx_apphend_instr(ctx, compares);
 				t_expr_convert(ctx, statement->itstmt->cond);
 				block_ctx_apphend_instr(ctx, tac_from_itstmt(ctx, statement->itstmt, block_start->label));
+			} else {
+				tac_instr *block_start = tac_new_label(ctx);
+				tac_instr *compares = NULL;
+				//Do statements start executing first, and don't skip straight to the comparison
+				if (!statement->itstmt->first) {
+					compares = tac_new_label(ctx);
+					block_ctx_apphend_instr(ctx, tac_goto(ctx, compares->label));
+				}
+				block_ctx_apphend_instr(ctx, block_start);
+				t_block_convert(ctx, statement->itstmt->block);
+				if (compares) block_ctx_apphend_instr(ctx, compares);
+				t_expr_convert(ctx, statement->itstmt->cond);
+				block_ctx_apphend_instr(ctx, tac_from_itstmt(ctx, statement->itstmt, block_start->label));				
 			}
 	}
 }
@@ -470,12 +516,15 @@ void t_expr_convert(block_ctx *ctx, t_expr *expr)
 		}
 		expr->virt_reg = block_ctx_last_register(ctx);
 	} else if (expr->type == 4) {
+		//Dont use temps when dereferencing a value
 		if (expr->unop->term->type != 2 && expr->unop->term->type != 4) {
-			tac = tac_from_unop(ctx, expr->unop);
+			if (expr->unop->op != oper_deref)
+				tac = tac_from_unop(ctx, expr->unop);
 			block_ctx_apphend_instr(ctx, tac);
 		} else {
 			t_expr_convert(ctx, expr->unop->term);
-			tac = tac_from_unop(ctx, expr->unop);
+			if (expr->unop->op != oper_deref)
+				tac = tac_from_unop(ctx, expr->unop);
 			block_ctx_apphend_instr(ctx, tac);
 		}
 		expr->virt_reg = block_ctx_last_register(ctx);

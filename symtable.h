@@ -6,10 +6,18 @@
 #include <string.h>
 #include "ast.h"
 
+#define PTR_SIZE 4
+
+static int type_size[] = {
+	1, sizeof(char), sizeof(char), sizeof(short), sizeof(short), sizeof(int), sizeof(int), sizeof(long), sizeof(long), sizeof(float), sizeof(double), sizeof(long double)
+};
+
 typedef struct type_info
 {
 	int type_name;
 	int num_ptr;
+
+	int size;
 } type_info;
 
 typedef struct symbol
@@ -44,6 +52,6 @@ void symbol_table_destroy(symbol_table *symt);
 long symbol_table_hash(char *ident);
 void symbol_apphend(symbol **head, symbol *new);
 symbol *symbol_find(symbol *head, long hash);
-
+void print_type(int type);
 
 #endif

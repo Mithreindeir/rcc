@@ -18,6 +18,10 @@ enum operators {
 	oper_incpre,
 	oper_decpost,
 	oper_decpre,
+	oper_lt,
+	oper_lte,
+	oper_gt,
+	oper_gte,
 	oper_neg
 };
 
@@ -99,11 +103,15 @@ struct t_iterative_stmt
 		t_expr *init;
 		t_expr *cond;
 		t_expr *iter;
+
+		int first;
 		
 		int type;
 };
 
 t_iterative_stmt *t_iterative_stmt_init0(t_expr *init, t_expr *cond, t_expr *iter, t_block *block);
+t_iterative_stmt *t_iterative_stmt_init1(t_expr *cond, t_block *block, int first);
+
 
 struct t_ident
 {
@@ -143,7 +151,8 @@ struct t_expr
 	int type;
 	//For Code Generation
 	int virt_reg;
-
+	int num_ptr;
+	int type_name;
 };
 
 t_expr *t_expr_init0(t_ident *ident);
@@ -199,6 +208,7 @@ struct t_block
 
 t_block *t_block_init(t_stmt *stmt);
 t_block *t_block_add(t_block *block, t_stmt *statement);
+t_block *t_block_merge(t_block *b1, t_block *b2);
 
 struct t_stmt
 {

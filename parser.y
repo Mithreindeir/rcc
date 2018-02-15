@@ -33,15 +33,15 @@
 %token <string> T_IDENT T_CINT T_CDOUBLE
 %token <token> T_ASN T_EQ T_NEQ T_LT T_LTE T_LPAREN
 %token <token> T_RPAREN T_LCBRK T_RCBRK T_DOT T_COMMA
-%token <token> T_MUL T_DIV T_PLUS T_SUB
-%token <token> T_INC T_DEC T_LBRCK T_LBRCK T_PTRMEM
+%token <token> T_MUL T_DIV T_PLUS T_SUB T_PTRMEM
+%token <token> T_INC T_DEC T_LBRCK T_RBRCK T_GTE T_GT
 %token <token> T_SEMIC T_VOID T_CHAR T_SHORT T_INT T_LONG
 %token <token> T_SIGNED T_UNSIGNED T_FLOAT T_DOUBLE
-%token <token> T_IF T_ELSE T_FOR T_WHILE T_BAND
+%token <token> T_IF T_ELSE T_FOR T_WHILE T_BAND T_DO
 
 
 %type <cnumeric> const
-%type <expr> primary expr eq_expr add_expr mul_expr asn_expr init unary postfix
+%type <expr> primary expr eq_expr add_expr mul_expr asn_expr declaration unary postfix expr_stmt rel_expr
 %type <ident> ident
 %type <oper> asn_op uni_op
 %type <type> type_spec
@@ -49,56 +49,70 @@
 %type <declr> declr
 %type <ddeclr> dir_declr
 %type <decl_spec> decl_spec
-%type <block> block
+%type <block> cmpd_stmt stmt_list
 %type <statement> stmt
 %type <cstmt> cond_stmt
 %type <itstmt> iter_stmt
 
-/*Operator Precedence*/
+/*Operator Precedence To Resolve Conflicts*/
 %left T_ASN
 %left T_EQ T_NEQ
 %left T_PLUS T_SUB
 %left T_MUL T_DIV
+%right T_LCBRK T_RCBRK
+%right T_IF T_ELSE
+
 
 %start program
 
 %%
 
 program	
-	: block { main_block = $1; }
+	: cmpd_stmt { main_block = $1; }
 
-block
+stmt_list
 	: stmt { $$ = t_block_init($1); }
-	| stmt block { $$ = t_block_add($2, $1); }
+	| stmt stmt_list { $$ = t_block_add($2, $1); }
+	;
+
+cmpd_stmt
+	: T_LCBRK T_RCBRK { $$ = 0; }
+	| T_LCBRK stmt_list T_RCBRK { $$ = $2; }
 	;
 
 stmt
-	: init T_SEMIC { $$ = t_stmt_init2($1); }
-	| asn_expr T_SEMIC { $$ = t_stmt_init2($1); }
-	| T_LCBRK block T_RCBRK { $$ = t_stmt_init0($2); }
+	: cmpd_stmt { $$ = t_stmt_init0($1); }
+	| expr_stmt { $$ = t_stmt_init2($1); }
 	| cond_stmt { $$ = t_stmt_init3($1); }
 	| iter_stmt { $$ = t_stmt_init4($1); }
 	;
 
+declaration
+	: decl_spec { $$ = t_expr_init3($1); }
+	| decl_spec T_ASN asn_expr T_SEMIC { $$ = t_expr_init2(t_expr_init3($1), oper_assign, $3); }
+	;
+
 iter_stmt
-	: T_FOR T_LPAREN init T_SEMIC asn_expr T_SEMIC asn_expr T_RPAREN stmt { $$ = t_iterative_stmt_init0($3, $5, $7, t_block_init($9)); }
+	: T_FOR T_LPAREN expr_stmt expr_stmt expr T_RPAREN stmt { $$ = t_iterative_stmt_init0($3, $4, $5, t_block_init($7)); }
+	| T_FOR T_LPAREN expr_stmt expr_stmt T_RPAREN stmt { $$ = t_iterative_stmt_init0($3, $4, NULL, t_block_init($6)); }
+	| T_WHILE T_LPAREN expr T_RPAREN stmt { $$ = t_iterative_stmt_init1($3, t_block_init($5), 0); }
+	| T_DO stmt T_WHILE T_LPAREN expr T_RPAREN T_SEMIC { $$ = t_iterative_stmt_init1($5, t_block_init($2), 1); }
 	;
 
 cond_stmt
 	: T_IF T_LPAREN asn_expr T_RPAREN stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), NULL); }
 	| T_IF T_LPAREN asn_expr T_RPAREN stmt T_ELSE stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), t_block_init($7)); }
 	;
-/*
-expr	
-	: asn_expr T_SEMIC { $$=$1; }
-	//| expr T_COMMA asn_expr
-	;
-*/
 
-init
-	: decl_spec { $$ = t_expr_init3($1); }
-	| decl_spec T_ASN asn_expr { $$ = t_expr_init2(t_expr_init3($1), oper_assign, $3); }
-	| asn_expr
+expr_stmt
+	: T_SEMIC { $$ = 0; }
+	| expr T_SEMIC { $$ = $1; }
+	| declaration { $$ = $1; }
+	;
+
+expr	
+	: asn_expr { $$=$1; }
+	| expr T_COMMA asn_expr
 	;
 	
 asn_expr
@@ -123,6 +137,7 @@ uni_op
 
 postfix
 	: primary { $$ = $1; }
+	| postfix T_LBRCK expr T_RBRCK { $$ = $1; }
 	| postfix T_INC { $$ = t_expr_init4($1, oper_incpost); }
 	| postfix T_DEC { $$ = t_expr_init4($1, oper_decpost); }
 	;
@@ -152,8 +167,16 @@ const
 	| T_CDOUBLE { $$ = t_numeric_init1($1); }
 	;
 
-eq_expr
+rel_expr
 	: add_expr
+	| eq_expr T_LT rel_expr { $$ = t_expr_init2($1, oper_lt, $3); }
+	| eq_expr T_GT rel_expr { $$ = t_expr_init2($1, oper_gt, $3); }
+	| eq_expr T_LTE rel_expr { $$ = t_expr_init2($1, oper_lte, $3); }
+	| eq_expr T_GTE rel_expr { $$ = t_expr_init2($1, oper_gte, $3); }
+	;
+
+eq_expr
+	: rel_expr 
 	| eq_expr T_EQ eq_expr { $$ = t_expr_init2($1, oper_equal, $3); }
 	| eq_expr T_NEQ eq_expr { $$ = t_expr_init2($1, oper_notequal, $3); }
 	;
@@ -209,10 +232,5 @@ dir_declr
 	| T_LPAREN declr T_RPAREN { $$ = t_dir_declr_init1($2); }
 	| dir_declr T_LPAREN T_RPAREN { $$ = $1;}
 	;
-
-func_def
-	: decl_spec T_LCBRK block T_RCBRK {}
-	;
-
 
 %%
