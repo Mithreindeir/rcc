@@ -12,9 +12,9 @@ if (test == abcd/10) {
 } else {
 	abcd = test/2;
 }
-```
 
 int result = test + abcd;
+```
 
 Becomes:
 
