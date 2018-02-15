@@ -25,6 +25,9 @@
 "signed"		return TOKEN(T_SIGNED);
 "unsigned"		return TOKEN(T_UNSIGNED);
 [a-zA-Z_][a-zA-Z0-9_]*	SAVE_TOKEN; return T_IDENT;
+"->"		return TOKEN(T_PTRMEM);
+"["			return TOKEN(T_LBRCK);
+"]"			return TOKEN(T_RBRCK);
 "&"			return TOKEN(T_BAND);
 "="			return TOKEN(T_ASN);
 "=="		return TOKEN(T_EQ);

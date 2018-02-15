@@ -57,6 +57,7 @@ typedef struct t_func_def t_func_def;
 typedef struct t_stmt t_stmt;
 typedef struct t_param_list t_param_list;
 typedef struct t_conditional_stmt t_conditional_stmt;
+typedef struct t_iterative_stmt t_iterative_stmt;
 
 struct t_call
 {
@@ -90,6 +91,19 @@ struct t_conditional_stmt
 };
 
 t_conditional_stmt *t_conditional_stmt_init(t_expr *condition, t_block *block, t_block *otherwise);
+
+struct t_iterative_stmt
+{
+		t_block *block;
+		
+		t_expr *init;
+		t_expr *cond;
+		t_expr *iter;
+		
+		int type;
+};
+
+t_iterative_stmt *t_iterative_stmt_init0(t_expr *init, t_expr *cond, t_expr *iter, t_block *block);
 
 struct t_ident
 {
@@ -192,7 +206,8 @@ struct t_stmt
 		t_block *block;
 		t_decl_spec *declaration;
 		t_expr *expression;
-		t_conditional_stmt *cstmt;		
+		t_conditional_stmt *cstmt;
+		t_iterative_stmt *itstmt;
 	};
 	int type;
 };
@@ -201,6 +216,7 @@ t_stmt *t_stmt_init0(t_block *block);
 t_stmt *t_stmt_init1(t_decl_spec *declaration);
 t_stmt *t_stmt_init2(t_expr *expr);
 t_stmt *t_stmt_init3(t_conditional_stmt *cstmt);
+t_stmt *t_stmt_init4(t_iterative_stmt *itstmt);
 
 /*Print Functions*/
 void t_block_print(t_block *block);

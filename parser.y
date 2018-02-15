@@ -20,6 +20,7 @@
 	t_dir_declr *ddeclr;
 	t_decl_spec *decl_spec;
 	t_conditional_stmt * cstmt;
+	t_iterative_stmt *itstmt;
 	t_block *block;
 	t_stmt *statement;
 	char *string;
@@ -33,7 +34,7 @@
 %token <token> T_ASN T_EQ T_NEQ T_LT T_LTE T_LPAREN
 %token <token> T_RPAREN T_LCBRK T_RCBRK T_DOT T_COMMA
 %token <token> T_MUL T_DIV T_PLUS T_SUB
-%token <token> T_INC T_DEC
+%token <token> T_INC T_DEC T_LBRCK T_LBRCK T_PTRMEM
 %token <token> T_SEMIC T_VOID T_CHAR T_SHORT T_INT T_LONG
 %token <token> T_SIGNED T_UNSIGNED T_FLOAT T_DOUBLE
 %token <token> T_IF T_ELSE T_FOR T_WHILE T_BAND
@@ -51,6 +52,7 @@
 %type <block> block
 %type <statement> stmt
 %type <cstmt> cond_stmt
+%type <itstmt> iter_stmt
 
 /*Operator Precedence*/
 %left T_ASN
@@ -74,7 +76,12 @@ stmt
 	: init T_SEMIC { $$ = t_stmt_init2($1); }
 	| asn_expr T_SEMIC { $$ = t_stmt_init2($1); }
 	| T_LCBRK block T_RCBRK { $$ = t_stmt_init0($2); }
-	| cond_stmt { $$ = t_stmt_init3($1);  }
+	| cond_stmt { $$ = t_stmt_init3($1); }
+	| iter_stmt { $$ = t_stmt_init4($1); }
+	;
+
+iter_stmt
+	: T_FOR T_LPAREN init T_SEMIC asn_expr T_SEMIC asn_expr T_RPAREN stmt { $$ = t_iterative_stmt_init0($3, $5, $7, t_block_init($9)); }
 	;
 
 cond_stmt
@@ -91,10 +98,12 @@ expr
 init
 	: decl_spec { $$ = t_expr_init3($1); }
 	| decl_spec T_ASN asn_expr { $$ = t_expr_init2(t_expr_init3($1), oper_assign, $3); }
+	| asn_expr
 	;
 	
 asn_expr
-	: eq_expr
+	: %empty { $$ = 0; }
+	| eq_expr
 	| unary asn_op asn_expr { $$ = t_expr_init2($1, $2, $3); }
 	;
 
@@ -204,5 +213,6 @@ dir_declr
 func_def
 	: decl_spec T_LCBRK block T_RCBRK {}
 	;
+
 
 %%

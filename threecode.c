@@ -193,6 +193,8 @@ void tac_operand_print(tac_operand *opr)
 
 tac_operand *tac_opr_from_expr(block_ctx *ctx, t_expr *expr)
 {
+	if (!expr) return NULL;
+
 	tac_operand *opr = malloc(sizeof(tac_operand));
 
 	if (expr->virt_reg != -1) {
@@ -315,7 +317,7 @@ void tac_instr_print(tac_instr *instr)
 		tac_operand_print(instr->clhs);
 		printf(" %s ", oper_string(instr->coperator_t));
 		tac_operand_print(instr->crhs);
-		printf(" them goto ");
+		printf(" then goto ");
 		printf(".L%d", instr->clabel);
 	} else if (instr->tac_type == TAC_GOTO) {
 		printf("goto .L%d", instr->label);
@@ -335,6 +337,7 @@ tac_instr *tac_from_cstmt(block_ctx *ctx, t_conditional_stmt *cstmt, int label)
 	tac->tac_type = TAC_CONDJMP;
 
 	tac->clhs = tac_opr_from_expr(ctx, cstmt->condition);
+
 	tac->coperator_t = oper_equal;
 	tac->clabel = label;
 	tac->crhs = malloc(sizeof(tac_operand));
@@ -345,6 +348,30 @@ tac_instr *tac_from_cstmt(block_ctx *ctx, t_conditional_stmt *cstmt, int label)
 
 	return tac;
 }
+
+tac_instr *tac_from_itstmt(block_ctx *ctx, t_iterative_stmt *itstmt, int label)
+{
+	tac_instr *tac = malloc(sizeof(tac_instr));
+
+	tac->tac_type = TAC_CONDJMP;
+
+	tac->clhs = tac_opr_from_expr(ctx, itstmt->cond);
+	if (!tac->clhs) {
+		tac->tac_type = TAC_GOTO;
+		tac->label = label;
+	} else {
+		tac->coperator_t = oper_equal;
+		tac->clabel = label;
+		tac->crhs = malloc(sizeof(tac_operand));
+		char buf[16];
+		snprintf(buf, 16, "0");
+		tac->crhs->constant_value = strdup(buf);
+		tac->crhs->tac_type = TAC_CONST;
+	}
+
+	return tac;
+}
+
 
 void t_block_convert(block_ctx *p, t_block *block)
 {
@@ -394,6 +421,22 @@ void t_stmt_convert(block_ctx *ctx, t_stmt *statement)
 				block_ctx_apphend_instr(ctx, label2);
 			}
 			break;
+		case 4:
+			;
+			//for loop
+			if (statement->itstmt->type == 0) {
+				//
+				tac_instr *block_start = tac_new_label(ctx);
+				tac_instr *compares = tac_new_label(ctx);
+				t_expr_convert(ctx, statement->itstmt->init);
+				block_ctx_apphend_instr(ctx, tac_goto(ctx, compares->label));
+				block_ctx_apphend_instr(ctx, block_start);
+				t_block_convert(ctx, statement->itstmt->block);
+				block_ctx_apphend_instr(ctx, compares);
+				t_expr_convert(ctx, statement->itstmt->iter);
+				t_expr_convert(ctx, statement->itstmt->cond);
+				block_ctx_apphend_instr(ctx, tac_from_itstmt(ctx, statement->itstmt, block_start->label));
+			}
 	}
 }
 

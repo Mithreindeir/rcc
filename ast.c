@@ -22,6 +22,19 @@ t_conditional_stmt *t_conditional_stmt_init(t_expr *condition, t_block *block, t
 	return cstmt;
 }
 
+t_iterative_stmt *t_iterative_stmt_init0(t_expr *init, t_expr *cond, t_expr *iter, t_block *block)
+{
+	t_iterative_stmt *its = malloc(sizeof(t_iterative_stmt));
+
+	its->init = init;
+	its->cond = cond;
+	its->iter = iter;
+	its->block = block;
+	its->type = 0;
+
+	return its;
+}
+
 t_ident *t_ident_init(char *ident)
 {
 	t_ident *idnt = malloc(sizeof(t_ident));
@@ -228,6 +241,16 @@ t_stmt *t_stmt_init3(t_conditional_stmt *cstmt)
 
 	statement->type = 3;
 	statement->cstmt = cstmt;
+
+	return statement;
+}
+
+t_stmt *t_stmt_init4(t_iterative_stmt *itstmt)
+{
+	t_stmt *statement = malloc(sizeof(t_stmt));
+
+	statement->type = 4;
+	statement->itstmt = itstmt;
 
 	return statement;
 }

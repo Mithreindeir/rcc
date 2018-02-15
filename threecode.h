@@ -96,6 +96,7 @@ tac_instr *tac_new_label(block_ctx *ctx);
 tac_instr *tac_from_binop(block_ctx *ctx, t_binop *binop);
 tac_instr *tac_from_unop(block_ctx *ctx, t_unop *unop);
 tac_instr *tac_from_cstmt(block_ctx *ctx, t_conditional_stmt *cstmt, int label);
+tac_instr *tac_from_itstmt(block_ctx *ctx, t_iterative_stmt *itstmt, int label);
 
 block_ctx *block_ctx_init(block_ctx *parent);
 void block_ctx_add_decl(block_ctx *ctx, t_decl_spec *decl);
