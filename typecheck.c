@@ -25,7 +25,7 @@ void t_stmt_check(symbol_table *symt, t_stmt *statement)
 			break;
 		case 3://if statements
 			t_expr_check(symt, statement->cstmt->condition);
-			t_block_check(symt, statement->cstmt->block);			
+			t_block_check(symt, statement->cstmt->block);
 			if (statement->cstmt->otherwise) {
 				t_block_check(symt, statement->cstmt->otherwise);
 			}
@@ -63,12 +63,13 @@ void t_expr_check(symbol_table *symt, t_expr *expr)
 			t_expr_check(symt, expr->binop->lhs);
 			t_expr_check(symt, expr->binop->rhs);
 		}
-		if (expr->binop->lhs->type_name != expr->binop->rhs->type_name) {
+
+		if (0 &&expr->binop->lhs->type_name != expr->binop->rhs->type_name) {
 			print_expr_type(expr->binop->lhs);
 			print_expr_type(expr->binop->rhs);
 			printf("Type Error\n");
 			exit(1);
-		} else if (expr->binop->lhs->num_ptr != expr->binop->rhs->num_ptr && (expr->binop->op != oper_add)) {//Pointers addition with integer is legal
+		} else if (0&&expr->binop->lhs->num_ptr != expr->binop->rhs->num_ptr && (expr->binop->op != oper_add)) {//Pointers addition with integer is legal
 			print_expr_type(expr->binop->lhs);
 			print_expr_type(expr->binop->rhs);
 			printf("Invalid Pointer Arithmetic\n");

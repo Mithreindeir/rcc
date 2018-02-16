@@ -40,7 +40,7 @@ enum type_names {
 
 	type_signed_long,
 	type_unsigned_long,
-	
+
 	//Floating Point Types
 	type_float,
 	type_double,
@@ -99,13 +99,13 @@ t_conditional_stmt *t_conditional_stmt_init(t_expr *condition, t_block *block, t
 struct t_iterative_stmt
 {
 		t_block *block;
-		
+
 		t_expr *init;
 		t_expr *cond;
 		t_expr *iter;
 
 		int first;
-		
+
 		int type;
 };
 
@@ -172,6 +172,8 @@ struct t_numeric
 
 t_numeric *t_numeric_init0(char *cint);
 t_numeric *t_numeric_init1(char *cdouble);
+t_numeric *t_numeric_init2(int cint);
+
 
 struct t_decl_spec
 {

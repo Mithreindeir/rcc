@@ -13,7 +13,6 @@ block_ctx *block_ctx_init(block_ctx *parent)
 	return ctx;
 }
 
-
 void block_ctx_add_decl(block_ctx *ctx, t_decl_spec *decl)
 {
 	ctx->num_decl++;
@@ -110,7 +109,7 @@ char *expr_string(block_ctx *ctx, t_expr *expr)
 		return strdup(buf);
 	} else if (expr->type==3) {
 		snprintf(buf, 16, "_%s",get_decl_name(expr->decl_spec));
-		return strdup(buf);		
+		return strdup(buf);
 	}
 	return NULL;
 }
@@ -177,26 +176,11 @@ char *oper_string(int oper)
 	return str;
 }
 
-/*
-enum tac_types
-{
-	TAC_BASN,
-	TAC_UASN,
-	TAC_COPY,
-	TAC_GOTO,
-	TAC_CONDJMP,
-	TAC_CALL,
-	TAC_ARR_ASN,
-	TAC_PTR_ASN
-};
-*/
-
-
 void tac_operand_print(tac_operand *opr)
 {
 	if (opr->ptr_access)
 		printf("*");
-	
+
 	if (opr->tac_type == TAC_IDENT) {
 		printf("%s", opr->identifier);
 	} else if (opr->tac_type == TAC_CONST) {
@@ -215,7 +199,7 @@ tac_operand *tac_opr_from_expr(block_ctx *ctx, t_expr *expr)
 
 	if (expr->virt_reg != -1) {
 		opr->temp_register = expr->virt_reg;
-		opr->tac_type = TAC_TEMP;	
+		opr->tac_type = TAC_TEMP;
 	} else if (expr->type == 0) {
 		opr->identifier = strdup(expr->ident->ident);
 		opr->tac_type = TAC_IDENT;
@@ -251,6 +235,7 @@ tac_operand *tac_opr_temp(block_ctx *ctx)
 {
 	tac_operand *opr = malloc(sizeof(tac_operand));
 
+	opr->ptr_access = 0;
 	opr->temp_register = block_ctx_get_register(ctx);
 	opr->tac_type = TAC_TEMP;
 
@@ -280,13 +265,50 @@ tac_instr *tac_from_binop(block_ctx *ctx, t_binop *binop)
 			tac->tac_type = TAC_PTR_ASN;
 		tac->operator_t = oper_assign;
 		tac->rhs = tac_opr_from_expr(ctx, binop->rhs);
-	} else {
+	} else {//If operation is pointer arithmetic, then multiply the index by the pointer type size
 		tac->tac_type = TAC_BASN;
-		tac->temp_dst = tac_opr_temp(ctx);
 
+		if (binop->lhs->num_ptr > 0 && binop->rhs->num_ptr == 0 && (binop->op == oper_add || binop->op == oper_sub)) {
+			int size = PTR_SIZE;
+			if (binop->lhs->num_ptr-1 == 0) size = type_size[binop->lhs->type_name];
+			t_binop *bop = malloc(sizeof(bop));
+			bop->op = oper_mult;
+			bop->lhs = binop->rhs;
+			bop->rhs = t_expr_init1(t_numeric_init2(size));
+			tac_instr *pbop = tac_from_binop(ctx, bop);
+			pbop->next = tac;
+			binop->rhs->virt_reg = block_ctx_last_register(ctx);
+
+			free(bop);
+			tac->lhs = tac_opr_from_expr(ctx, binop->lhs);
+			tac->rhs = tac_opr_from_expr(ctx, binop->rhs);
+			tac->temp_dst = tac_opr_temp(ctx);
+			tac->operator_t = binop->op;
+			return pbop;
+		} else if (binop->rhs->num_ptr > 0 && binop->lhs->num_ptr == 0 && (binop->op == oper_add || binop->op == oper_sub)) {
+
+			int size = PTR_SIZE;
+			if (binop->lhs->num_ptr-1 == 0) size = type_size[binop->lhs->type_name];
+			t_binop *bop = malloc(sizeof(bop));
+			bop->op = oper_mult;
+			bop->lhs = binop->lhs;
+			bop->rhs = t_expr_init1(t_numeric_init2(size));
+			tac_instr *pbop = tac_from_binop(ctx, bop);
+			pbop->next = tac;
+			binop->lhs->virt_reg = block_ctx_last_register(ctx);
+
+			free(bop);
+			tac->temp_dst = tac_opr_temp(ctx);
+			tac->lhs = tac_opr_from_expr(ctx, binop->lhs);
+			tac->rhs = tac_opr_from_expr(ctx, binop->rhs);
+			tac->operator_t = binop->op;
+			return pbop;
+		}
+		tac->temp_dst = tac_opr_temp(ctx);
 		tac->lhs = tac_opr_from_expr(ctx, binop->lhs);
 		tac->operator_t = binop->op;
 		tac->rhs = tac_opr_from_expr(ctx, binop->rhs);
+
 	}
 
 	return tac;
@@ -312,7 +334,7 @@ tac_instr *tac_goto(block_ctx * ctx, int label)
 	tac->tac_type = TAC_GOTO;
 	tac->label = label;
 
-	return tac;	
+	return tac;
 }
 
 void tac_instr_print(tac_instr *instr)
@@ -353,7 +375,7 @@ void tac_instr_print(tac_instr *instr)
 		//*x = y
 		tac_operand_print(instr->lhs);
 		printf(" %s ", oper_string(instr->operator_t));
-		tac_operand_print(instr->rhs);		
+		tac_operand_print(instr->rhs);
 	}
 	printf("\n");
 
@@ -405,6 +427,42 @@ tac_instr *tac_from_itstmt(block_ctx *ctx, t_iterative_stmt *itstmt, int label)
 	return tac;
 }
 
+void tac_opr_destroy(tac_operand *opr)
+{
+	if (!opr) return;
+
+	if (opr->tac_type == TAC_IDENT) {
+		free(opr->identifier);
+	} else if (opr->tac_type == TAC_CONST) {
+		free(opr->constant_value);
+	}
+
+	free(opr);
+}
+
+void tac_instr_destroy(tac_instr * tac)
+{
+	if (!tac) return;
+	if (tac->tac_type == TAC_COPY) {
+		tac_opr_destroy(tac->lhs);
+		tac_opr_destroy(tac->rhs);
+	} else if (tac->tac_type == TAC_BASN) {
+		tac_opr_destroy(tac->lhs);
+		tac_opr_destroy(tac->rhs);
+		tac_opr_destroy(tac->temp_dst);
+	} else if (tac->tac_type == TAC_UASN) {
+		tac_opr_destroy(tac->temp_dst);
+		tac_opr_destroy(tac->rhs);
+	} else if (tac->tac_type == TAC_CONDJMP) {
+		tac_opr_destroy(tac->clhs);
+		tac_opr_destroy(tac->crhs);
+	} else if (tac->tac_type == TAC_PTR_ASN) {
+		tac_opr_destroy(tac->lhs);
+		tac_opr_destroy(tac->rhs);
+	}
+
+	free(tac);
+}
 
 void t_block_convert(block_ctx *p, t_block *block)
 {
@@ -413,6 +471,7 @@ void t_block_convert(block_ctx *p, t_block *block)
 	if (!p)
 		ctx = block_ctx_init(p);
 	else ctx = p;
+
 	for (int i = (block->num_statements-1); i >= 0; i--) {
 		t_stmt_convert(ctx, block->statements[i]);
 	}
@@ -448,7 +507,7 @@ void t_stmt_convert(block_ctx *ctx, t_stmt *statement)
 			t_block_convert(ctx, statement->cstmt->block);
 			if (label2) block_ctx_apphend_instr(ctx, tac_goto(ctx, label2->label));
 			block_ctx_apphend_instr(ctx, label1);
-			
+
 			if (label2) {
 				t_block_convert(ctx, statement->cstmt->otherwise);
 				block_ctx_apphend_instr(ctx, label2);
@@ -481,14 +540,14 @@ void t_stmt_convert(block_ctx *ctx, t_stmt *statement)
 				t_block_convert(ctx, statement->itstmt->block);
 				if (compares) block_ctx_apphend_instr(ctx, compares);
 				t_expr_convert(ctx, statement->itstmt->cond);
-				block_ctx_apphend_instr(ctx, tac_from_itstmt(ctx, statement->itstmt, block_start->label));				
+				block_ctx_apphend_instr(ctx, tac_from_itstmt(ctx, statement->itstmt, block_start->label));
 			}
 	}
 }
 
 /*
 Calculate three address codes for leafs first, then assign interior nodes
-a unique temporary value and use that to generate more  
+a unique temporary value and use that to generate more
 */
 void t_expr_convert(block_ctx *ctx, t_expr *expr)
 {

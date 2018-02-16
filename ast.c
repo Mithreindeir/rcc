@@ -163,6 +163,16 @@ t_numeric *t_numeric_init1(char *cdouble)
 	return n;
 }
 
+t_numeric *t_numeric_init2(int cint)
+{
+	t_numeric *n = malloc(sizeof(t_numeric));
+
+	n->cint = cint;
+	n->type = 0;
+	
+	return n;	
+}
+
 t_decl_spec *t_decl_spec_init(int type, t_declr *decl)
 {
 	t_decl_spec *decl_spec = malloc(sizeof(t_decl_spec));
