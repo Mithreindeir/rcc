@@ -68,7 +68,7 @@
 %%
 
 program
-	: cmpd_stmt { main_block = $1; }
+	: stmt_list { main_block = $1; }
 
 stmt_list
 	: stmt { $$ = t_block_init($1); }
@@ -123,8 +123,8 @@ asn_expr
 
 unary
 	: postfix { $$ = $1; }
-	| T_INC  unary { $$ = t_expr_init2($2, oper_assign, t_expr_init2($2, oper_add, t_expr_init1(t_numeric_init0("1")))); }
-	| T_DEC  unary { $$ = t_expr_init2($2, oper_assign, t_expr_init2($2, oper_sub, t_expr_init1(t_numeric_init0("1")))); }
+	| T_INC  unary { $$ = t_expr_init4($2, oper_incpre); }
+	| T_DEC  unary { $$ = t_expr_init4($2, oper_decpre); }
 	| uni_op unary { $$ = t_expr_init4($2, $1); }
 	;
 
@@ -137,8 +137,8 @@ uni_op
 postfix
 	: primary { $$ = $1; }
 	| postfix T_LBRCK expr T_RBRCK { $$ = t_expr_init4(t_expr_init2($1, oper_add, $3), oper_deref); }
-	| postfix T_INC { $$ = t_expr_init2($1, oper_assign, t_expr_init2($1, oper_add, t_expr_init1(t_numeric_init0("1")))); }
-	| postfix T_DEC { $$ = t_expr_init2($1, oper_assign, t_expr_init2($1, oper_sub, t_expr_init1(t_numeric_init0("1")))); }
+	| postfix T_INC { $$ = t_expr_init4($1, oper_incpost); } 
+	| postfix T_DEC { $$ = t_expr_init4($1, oper_decpost); }
 	;
 
 asn_op
@@ -193,16 +193,16 @@ or_expr
 
 rel_expr
 	: add_expr
-	| eq_expr T_LT rel_expr { $$ = t_expr_init2($1, oper_lt, $3); }
-	| eq_expr T_GT rel_expr { $$ = t_expr_init2($1, oper_gt, $3); }
-	| eq_expr T_LTE rel_expr { $$ = t_expr_init2($1, oper_lte, $3); }
-	| eq_expr T_GTE rel_expr { $$ = t_expr_init2($1, oper_gte, $3); }
+	| rel_expr T_LT add_expr { $$ = t_expr_init2($1, oper_lt, $3); }
+	| rel_expr T_GT add_expr { $$ = t_expr_init2($1, oper_gt, $3); }
+	| rel_expr T_LTE add_expr { $$ = t_expr_init2($1, oper_lte, $3); }
+	| rel_expr T_GTE add_expr { $$ = t_expr_init2($1, oper_gte, $3); }
 	;
 
 eq_expr
 	: rel_expr
-	| eq_expr T_EQ eq_expr { $$ = t_expr_init2($1, oper_equal, $3); }
-	| eq_expr T_NEQ eq_expr { $$ = t_expr_init2($1, oper_notequal, $3); }
+	| eq_expr T_EQ rel_expr { $$ = t_expr_init2($1, oper_equal, $3); }
+	| eq_expr T_NEQ rel_expr { $$ = t_expr_init2($1, oper_notequal, $3); }
 	;
 
 add_expr

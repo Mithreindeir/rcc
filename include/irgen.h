@@ -19,6 +19,7 @@ void expr_gen(quad_gen *gen, t_expr *expr);
 
 quad_operand *quad_new_temp(quad_gen *gen);
 quad_operand *quad_opr_from_expr(quad_gen *gen, t_expr *expr);
+int quad_ptr_scale(quad_gen *gen, t_expr *expr);
 void quad_from_binop(quad_gen *gen, t_expr *expr);
 void quad_from_unop(quad_gen *gen, t_expr *expr);
 void quad_from_cond(quad_gen *gen, t_expr *expr);

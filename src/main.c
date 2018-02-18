@@ -16,11 +16,12 @@ int main(int argc, char **argv)
 	printf("\n");
 	t_block_check(global_table, main_block);
 	printf("\n");
-	block_gen(quad_gen_init(global_table), main_block);
-
+	quad_gen *gen = quad_gen_init(global_table);
+	block_gen(gen, main_block);
+	quad_gen_print(gen);
 	//t_block_convert(NULL, main_block);
 	symbol_table_destroy(global_table);
-
+	quad_gen_destroy(gen);
 	t_block_destroy(main_block);
 	return 0;
 }

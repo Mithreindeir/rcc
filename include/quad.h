@@ -110,6 +110,7 @@ int quad_gen_last_label(quad_gen *gen);
 void quad_gen_add(quad_gen *gen, quadruple *quad);
 int quad_gen_next(quad_gen *gen);
 void quad_gen_insert(quad_gen *gen, int idx, quadruple *quad);
+void quad_gen_print(quad_gen *gen);
 
 /*General*/
 void quad_operation_print(quad_op oper);

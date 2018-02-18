@@ -238,6 +238,17 @@ void quad_gen_destroy(quad_gen * qgen)
 	free(qgen);
 }
 
+void quad_gen_print(quad_gen *gen)
+{
+	printf("\n");
+	for (int i = 0; i < gen->num_quads; i++) {
+		//printf("%d:\t", i);
+		quad_print(gen->quads[i]);
+		printf("\n");
+	}
+	printf("\n");
+}
+
 int quad_gen_request_temp(quad_gen * gen)
 {
 	gen->num_temps++;
