@@ -1,7 +1,7 @@
 %{
 	#include <stdio.h>
-	#include "ast.h"
-	#include "symtable.h"
+	#include "../include/ast.h"
+	#include "../include/symtable.h"
 
 	#define YYERROR_VERBOSE
 

@@ -1,15 +1,15 @@
 #include <stdio.h>
-#include "ast.h"
-#include "symtable.h"
-#include "typecheck.h"
-#include "irgen.h"
+#include "../include/ast.h"
+#include "../include/symtable.h"
+#include "../include/typecheck.h"
+#include "../include/irgen.h"
 
 extern t_block *main_block;
 extern symbol_table *global_table;
 
 extern int yyparse();
 
-int main(int argc, char ** argv)
+int main(int argc, char **argv)
 {
 	global_table = symbol_table_init();
 	yyparse();

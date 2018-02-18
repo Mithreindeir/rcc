@@ -1,7 +1,7 @@
 %{
 	#include <stdio.h>
-	#include "ast.h"
-	#include "parser.h"
+	#include "../include/ast.h"
+	#include "../include/parser.h"
 	#define SAVE_TOKEN yylval.string = strndup(yytext, yyleng)
 	#define TOKEN(t) (yylval.token = t)
 	int yywrap(void) {
