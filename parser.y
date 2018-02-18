@@ -154,7 +154,7 @@ primary
 			$$ = t_expr_init0($1);
 		}
 	| const { $$ = t_expr_init1($1); }
-	| T_LPAREN eq_expr T_RPAREN { $$ = $2; }
+	| T_LPAREN or_expr T_RPAREN { $$ = $2; }
 	;
 
 ident

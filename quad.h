@@ -118,18 +118,18 @@ void quad_print(quadruple *quad);
 
 typedef struct quad_list
 {
-	int *quad_list;
+	quadruple ** quad_list;
 	int num_quads;
 } quad_list;
 
 /*Backpatching interface*/
-void backpatch(quad_gen *gen, quad_list *list, int label);
+void backpatch(quad_list *list, int label);
 quad_list *merge(quad_list *l1, quad_list *l2);
-quad_list *make_list(int idx);
+quad_list *make_list(quadruple *quad);
 void list_destroy(quad_list *list);
 int quad_list_min(quad_list *list);
 int quad_list_max(quad_list *list);
-void quad_list_replace(quad_list *list, int oldv, int newv);
+void quad_list_replace(quad_list *list);
 void quad_list_print(quad_list *list);
 
 #endif

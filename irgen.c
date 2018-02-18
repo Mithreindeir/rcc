@@ -47,9 +47,9 @@ void stmt_gen(quad_gen *gen, t_stmt *stmt)
 			block_gen(gen, stmt->cstmt->block);
 			quad_gen_add(gen, block_end);
 			if (stmt->cstmt->condition->falselist)
-				backpatch(gen, stmt->cstmt->condition->falselist, block_end->label);
+				backpatch(stmt->cstmt->condition->falselist, block_end->label);
 			if (stmt->cstmt->condition->truelist)
-				backpatch(gen, stmt->cstmt->condition->truelist, block_start->label);
+				backpatch(stmt->cstmt->condition->truelist, block_start->label);
 			if (else_stmt) {
 				quad_jump(quad_jmp, else_stmt->label);
 				block_gen(gen, stmt->cstmt->otherwise);
@@ -197,7 +197,7 @@ void quad_from_cond(quad_gen *gen, t_expr *expr)
 	quad_operand *cond = quad_opr_from_expr(gen, expr);
 
 	quad = quad_general(quad_jeq, NULL, cond, NULL);
-	expr->falselist = make_list(quad_gen_next(gen));
+	expr->falselist = make_list(quad);
 	quad_gen_add(gen, quad);
 }
 
@@ -267,44 +267,31 @@ void quad_from_binop(quad_gen *gen, t_expr *expr)
 	}
 	//Todo switch index array to pointers, so an array insertion doesnt screw up the following indexes
 	if (quad->operation == quad_and) {
-		int min_idx = quad_list_min(expr->binop->rhs->truelist);
-		quad_list_replace(expr->binop->rhs->truelist, min_idx, min_idx+1);
+		int max_idx = quad_list_max(expr->binop->lhs->truelist);
 		quadruple *qlabel = quad_label(quad_gen_request_label(gen));
-		quad_gen_insert(gen, min_idx, qlabel);
-		backpatch(gen, expr->binop->lhs->truelist, qlabel->label);
+		quad_gen_insert(gen, max_idx+1, qlabel);
+		backpatch(expr->binop->lhs->truelist, qlabel->label);
 		expr->binop->lhs->truelist = NULL;
 		expr->truelist = expr->binop->rhs->truelist;
 		expr->falselist = merge(expr->binop->lhs->falselist, expr->binop->rhs->falselist);
 	} else if (quad->operation == quad_or) {
-		int min_idx = quad_list_min(expr->binop->rhs->falselist);
-		quad_list_replace(expr->binop->rhs->falselist, min_idx, min_idx+1);
-		printf("ltruelist\n");
-		quad_list_print(expr->binop->lhs->truelist);
-		printf("lfalselist\n");
-		quad_list_print(expr->binop->lhs->falselist);
-		printf("rtruelist\n");
-		quad_list_print(expr->binop->rhs->truelist);
-		printf("falselist\n");
-		quad_list_print(expr->binop->rhs->falselist);
+		int max_idx = quad_list_max(expr->binop->lhs->truelist);
 		quadruple *qlabel = quad_label(quad_gen_request_label(gen));
-		quad_gen_insert(gen, min_idx, qlabel);
-		backpatch(gen, expr->binop->lhs->falselist, qlabel->label);
+		quad_gen_insert(gen, max_idx+1, qlabel);
+		backpatch(expr->binop->lhs->falselist, qlabel->label);
 
 		expr->binop->lhs->falselist = NULL;
 		expr->falselist = expr->binop->rhs->falselist;
 		expr->truelist = merge(expr->binop->lhs->truelist, expr->binop->rhs->truelist);
-		printf("ftruelist\n");
-		quad_list_print(expr->truelist);
-		printf("falselist\n");
-		quad_list_print(expr->falselist);
 	} else {
 		quad_gen_add(gen, quad);
 	}
 
 	if (quad->type == Q_CGOTO) {
-		expr->falselist = make_list(quad_gen_next(gen)-1);
-		expr->truelist = make_list(quad_gen_next(gen));
-		quad_gen_add(gen, quad_jump(quad_jmp, 0));
+		expr->falselist = make_list(quad);
+        quadruple *jquad = quad_jump(quad_jmp, 0);
+        quad_gen_add(gen, jquad);
+		expr->truelist = make_list(jquad);
 	}
 }
 
