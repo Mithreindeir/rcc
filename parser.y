@@ -4,7 +4,7 @@
 	#include "symtable.h"
 
 	#define YYERROR_VERBOSE
-	
+
 	t_block *main_block;
 	symbol_table *global_table;
 
@@ -37,11 +37,11 @@
 %token <token> T_INC T_DEC T_LBRCK T_RBRCK T_GTE T_GT
 %token <token> T_SEMIC T_VOID T_CHAR T_SHORT T_INT T_LONG
 %token <token> T_SIGNED T_UNSIGNED T_FLOAT T_DOUBLE
-%token <token> T_IF T_ELSE T_FOR T_WHILE T_BAND T_DO
-
+%token <token> T_IF T_ELSE T_FOR T_WHILE T_DO
+%token <token> T_BAND T_AND T_BOR T_OR T_XOR
 
 %type <cnumeric> const
-%type <expr> primary expr eq_expr add_expr mul_expr asn_expr declaration unary postfix expr_stmt rel_expr
+%type <expr> primary expr eq_expr add_expr mul_expr asn_expr declaration unary postfix expr_stmt rel_expr or_expr and_expr xor_expr bor_expr band_expr
 %type <ident> ident
 %type <oper> asn_op uni_op
 %type <type> type_spec
@@ -67,7 +67,7 @@
 
 %%
 
-program	
+program
 	: cmpd_stmt { main_block = $1; }
 
 stmt_list
@@ -110,14 +110,14 @@ expr_stmt
 	| declaration { $$ = $1; }
 	;
 
-expr	
+expr
 	: asn_expr { $$=$1; }
 	| expr T_COMMA asn_expr
 	;
-	
+
 asn_expr
 	: %empty { $$ = 0; }
-	| eq_expr
+	| or_expr
 	| unary asn_op asn_expr { $$ = t_expr_init2($1, $2, $3); }
 	;
 
@@ -166,6 +166,31 @@ const
 	| T_CDOUBLE { $$ = t_numeric_init1($1); }
 	;
 
+band_expr
+	: eq_expr
+	| band_expr T_BAND eq_expr { $$ = t_expr_init2($1, oper_band,$3); }
+	;
+
+xor_expr
+	: band_expr
+	| xor_expr T_XOR band_expr { $$ = t_expr_init2($1, oper_xor, $3); }
+	;
+
+bor_expr
+	: xor_expr { $$ = $1; }
+	| bor_expr T_BOR xor_expr { $$ = t_expr_init2($1, oper_bor, $3); }
+	;
+
+and_expr
+	: bor_expr { $$ = $1; }
+	| and_expr T_AND bor_expr { $$ = t_expr_init2($1, oper_and, $3); }
+	;
+
+or_expr
+	: and_expr { $$ = $1; }
+	| or_expr T_OR and_expr { $$ = t_expr_init2($1, oper_or, $3); }
+	;
+
 rel_expr
 	: add_expr
 	| eq_expr T_LT rel_expr { $$ = t_expr_init2($1, oper_lt, $3); }
@@ -175,7 +200,7 @@ rel_expr
 	;
 
 eq_expr
-	: rel_expr 
+	: rel_expr
 	| eq_expr T_EQ eq_expr { $$ = t_expr_init2($1, oper_equal, $3); }
 	| eq_expr T_NEQ eq_expr { $$ = t_expr_init2($1, oper_notequal, $3); }
 	;

@@ -16,6 +16,12 @@ basic_block *basic_block_init(tac_instr *first, tac_instr **next)
 	bb->output = NULL;
 	bb->num_out = 0;
 
+	bb->def = NULL;
+	bb->num_def = 0;
+
+	bb->use = NULL;
+	bb->num_use = 0;
+
 	//Removes link after the first condjmp/goto instr
 	//Or if the instr is a label (the endpoint of a jump)
 	//Labels can start basic blocks but not end them.
@@ -53,6 +59,8 @@ void basic_block_destroy(basic_block *block)
 		cur = next;
 	}
 
+	free(block->use);
+	free(block->def);
 	free(block->output);
 	free(block->input);
 	free(block->pred);
@@ -106,13 +114,13 @@ basic_block *cfg_construct(tac_instr *enter)
 	int *label_block = NULL;
 	while (next) {
 		int labeln = -1;
-		if (next->type == TAC_LABEL) labeln = next->label;
+		if (next->tac_type == TAC_LABEL) labeln = next->label;
 		basic_block *bb = basic_block_init(next, &next);
 		//All basic blocks have a natural edge to the next
 		//instruction unless there is an unconditional jump
 		if (num_blocks) {
 			tac_instr *lasti = basic_block_last(blocks[num_blocks-1]);
-			if (lasti->type != TAC_GOTO) {
+			if (lasti->tac_type != TAC_GOTO) {
 				basic_block_apred(bb, blocks[num_blocks-1]);
 				basic_block_asucc(blocks[num_blocks-1], bb);
 			}
@@ -123,7 +131,7 @@ basic_block *cfg_construct(tac_instr *enter)
 			label_block = malloc(sizeof(int));
 			blocks = malloc(sizeof(basic_block*));
 		} else {
-			label_block = realloc(label_block, sizeof(int) *num_block);
+			label_block = realloc(label_block, sizeof(int) *num_blocks);
 			blocks = realloc(blocks, sizeof(basic_block*) *num_blocks);
 		}
 		label_block[num_blocks-1] = labeln;
@@ -157,8 +165,82 @@ basic_block *cfg_construct(tac_instr *enter)
 			blocks[i] = NULL;
 		}
 	}
-	basic_block *enter = num_blocks > 0 ? blocks[0] : NULL;
-	free(blocks[i]);
-	return enter;
+	basic_block *entrance = num_blocks > 0 ? blocks[0] : NULL;
+	free(blocks);
+	return entrance;
 }
 
+void basic_block_initialize(basic_block *block)
+{
+	//First set set the use and def
+	return;
+	tac_instr * cur = block->block;
+
+	int *use = NULL, *ln_num = NULL;
+	int num_use = 0, num_def = 0;
+
+	while (cur) {
+		used_values(cur, &use, &num_use);
+
+		int defined = defined_values(cur);
+
+		cur = cur->next;
+	}
+}
+
+int defined_values(tac_instr *instr)
+{
+	if (instr->tac_type == TAC_COPY) {
+		if (instr->rhs->tac_type == TAC_TEMP)
+			return instr->rhs->temp_register;
+	} else if (instr->tac_type == TAC_BASN) {
+		return instr->temp_dst->temp_register;
+	} else if (instr->tac_type == TAC_UASN) {
+		return instr->temp_dst->temp_register;
+	} else if (instr->tac_type == TAC_PTR_ASN) {
+		if (instr->lhs->tac_type == TAC_TEMP)
+			return instr->lhs->temp_register;
+	}
+}
+
+void used_values(tac_instr *instr, int **arr, int *num)
+{
+	if (instr->tac_type == TAC_COPY) {
+		if (instr->rhs->tac_type == TAC_TEMP)
+			intarr_add(arr, num, instr->rhs->temp_register);
+	} else if (instr->tac_type == TAC_BASN) {
+		if (instr->lhs->tac_type == TAC_TEMP)
+			intarr_add(arr, num, instr->lhs->temp_register);
+		if (instr->rhs->tac_type == TAC_TEMP)
+			intarr_add(arr, num, instr->rhs->temp_register);
+	} else if (instr->tac_type == TAC_UASN) {
+		if (instr->rhs->tac_type == TAC_TEMP)
+			intarr_add(arr, num, instr->rhs->temp_register);
+	} else if (instr->tac_type == TAC_PTR_ASN) {
+		if (instr->rhs->tac_type == TAC_TEMP)
+			intarr_add(arr, num, instr->rhs->temp_register);
+	} else if (instr->tac_type == TAC_CONDJMP) {
+		if (instr->clhs->tac_type == TAC_TEMP)
+			intarr_add(arr, num, instr->clhs->temp_register);
+		if (instr->crhs->tac_type == TAC_TEMP)
+			intarr_add(arr, num, instr->crhs->temp_register);
+	}
+
+}
+
+void intarr_add(int **arr, int *num, int val)
+{
+	int n = *num, *array = *arr;
+	n++;
+	if (n==1) {
+		array = malloc(sizeof(int));
+	} else {
+		array = realloc(array, sizeof(int) * n);
+	}
+
+	array[n-1] = val;
+
+	*num = n;
+	*arr = array;
+
+}

@@ -27,6 +27,7 @@ typedef struct symbol
 	type_info type;
 	long hash;
 	int scope;
+	int temp;
 
 	struct symbol * next;
 } symbol;
@@ -40,6 +41,10 @@ typedef struct symbol_table
 {
 	symbol **symbols;
 	int num_buckets;
+
+	//Each code block gets a new symbol table for scope.
+	struct symbol_table ** children, *parent;
+	int num_children;
 } symbol_table;
 
 /*Allocates and Initializes a symbol table with 100 buckets*/
@@ -70,5 +75,7 @@ void symbol_apphend(symbol **head, symbol *new);
 symbol *symbol_find(symbol *head, long hash);
 /* Prints string given type identifier number*/
 void print_type(int type);
+/*Finds name in decl_spec struct*/
+char * get_decl_name(t_decl_spec *decl);
 
 #endif

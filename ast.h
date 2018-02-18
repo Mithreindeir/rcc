@@ -11,6 +11,11 @@ enum operators {
 	oper_div,
 	oper_equal,
 	oper_notequal,
+	oper_band,
+	oper_bor,
+	oper_and,
+	oper_or,
+	oper_xor,
 	oper_ref,
 	oper_deref,
 	oper_assign,
@@ -150,6 +155,7 @@ struct t_expr
 	};
 	int type;
 	//For Code Generation
+	void *truelist, *falselist;
 	int virt_reg;
 	int num_ptr;
 	int type_name;
@@ -160,6 +166,8 @@ t_expr *t_expr_init1(t_numeric *num);
 t_expr *t_expr_init2(t_expr *lhs, int op, t_expr *rhs);
 t_expr *t_expr_init3(t_decl_spec *decl_spec);
 t_expr *t_expr_init4(t_expr *term, int oper);
+void t_expr_destroy(t_expr *expr);
+
 
 struct t_numeric
 {
@@ -173,7 +181,7 @@ struct t_numeric
 t_numeric *t_numeric_init0(char *cint);
 t_numeric *t_numeric_init1(char *cdouble);
 t_numeric *t_numeric_init2(int cint);
-
+void t_numeric_destroy(t_numeric *num);
 
 struct t_decl_spec
 {
@@ -182,6 +190,7 @@ struct t_decl_spec
 };
 
 t_decl_spec *t_decl_spec_init(int type, t_declr *decl);
+void t_decl_spec_destroy(t_decl_spec *decl_spec);
 
 struct t_declr {
 	int ptr;
@@ -189,6 +198,7 @@ struct t_declr {
 };
 
 t_declr *t_declr_init(int n_ptr, t_dir_declr *ddecl);
+void t_declr_destroy(t_declr *decl);
 
 struct t_dir_declr
 {
@@ -201,6 +211,7 @@ struct t_dir_declr
 
 t_dir_declr *t_dir_declr_init0(t_ident *ident);
 t_dir_declr *t_dir_declr_init1(t_declr *decl);
+void t_dir_declr_destroy(t_dir_declr * ddecl);
 
 struct t_block
 {
@@ -211,6 +222,7 @@ struct t_block
 t_block *t_block_init(t_stmt *stmt);
 t_block *t_block_add(t_block *block, t_stmt *statement);
 t_block *t_block_merge(t_block *b1, t_block *b2);
+void t_block_destroy(t_block *block);
 
 struct t_stmt
 {
@@ -229,6 +241,7 @@ t_stmt *t_stmt_init1(t_decl_spec *declaration);
 t_stmt *t_stmt_init2(t_expr *expr);
 t_stmt *t_stmt_init3(t_conditional_stmt *cstmt);
 t_stmt *t_stmt_init4(t_iterative_stmt *itstmt);
+void t_stmt_destroy(t_stmt *stmt);
 
 /*Print Functions*/
 void t_block_print(t_block *block);

@@ -2,7 +2,6 @@
 #define TYPECHECK_H
 
 #include "ast.h"
-#include "threecode.h"
 #include "symtable.h"
 
 

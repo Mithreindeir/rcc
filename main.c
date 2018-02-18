@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "ast.h"
-#include "threecode.h"
 #include "symtable.h"
 #include "typecheck.h"
+#include "irgen.h"
 
 extern t_block *main_block;
 extern symbol_table *global_table;
@@ -16,8 +16,11 @@ int main(int argc, char ** argv)
 	printf("\n");
 	t_block_check(global_table, main_block);
 	printf("\n");
-	t_block_convert(NULL, main_block);
+	block_gen(quad_gen_init(global_table), main_block);
+
+	//t_block_convert(NULL, main_block);
 	symbol_table_destroy(global_table);
 
+	t_block_destroy(main_block);
 	return 0;
 }

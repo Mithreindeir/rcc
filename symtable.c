@@ -5,6 +5,7 @@ symbol *symbol_init(char * ident, type_info type, long hash)
 	symbol *sym = malloc(sizeof(symbol));
 
 	sym->ident = strdup(ident);
+	sym->temp = 0;
 	sym->type = type;
 	sym->scope = 1;
 	sym->hash = hash;
@@ -25,7 +26,7 @@ void symbol_apphend(symbol **head, symbol *new)
 }
 
 symbol *symbol_find(symbol *head, long hash)
-{	
+{
 	while (head) {
 		if (head->hash == hash) return head;
 		head = head->next;
@@ -33,11 +34,15 @@ symbol *symbol_find(symbol *head, long hash)
 	return NULL;
 }
 
-symbol_table *symbol_table_init()
+symbol_table *symbol_table_init(symbol_table *parent)
 {
 	symbol_table *symt = malloc(sizeof(symbol_table));
 	symt->num_buckets = 100;
 	symt->symbols = malloc(symt->num_buckets * sizeof(symbol*));
+	symt->parent = parent;
+	symt->children = NULL;
+	symt->num_children = 0;
+
 	for (int i = 0; i < symt->num_buckets; i++) {
 		symt->symbols[i] = NULL;
 	}
@@ -166,5 +171,28 @@ void print_type(int type)
 		case type_double:
 			printf("double ");
 			break;
+	}
+}
+
+char * get_decl_name(t_decl_spec *decl)
+{
+	t_declr *declor = NULL;
+	t_dir_declr *ddecl = NULL;
+	int type = 0;
+	while (1) {
+		if (type==0) {
+			declor = decl->declarator;
+			type = 1;
+		} else if (type == 1) {
+			ddecl = declor->ddecl;
+			type = 2;
+		} else {
+			if (ddecl->type) {
+				declor = ddecl->decl;
+				type = 1;
+			} else {
+				return ddecl->ident->ident;
+			}
+		}
 	}
 }

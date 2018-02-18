@@ -44,7 +44,7 @@ t_iterative_stmt *t_iterative_stmt_init1(t_expr *cond, t_block *block, int first
 	its->block = block;
 	its->type = 1;
 
-	return its;	
+	return its;
 }
 
 t_ident *t_ident_init(char *ident)
@@ -59,7 +59,7 @@ t_ident *t_ident_init(char *ident)
 
 t_binop *t_binop_init(t_expr *lhs, int op, t_expr *rhs)
 {
-	t_binop *binop = malloc(sizeof(t_binop));	
+	t_binop *binop = malloc(sizeof(t_binop));
 
 	binop->lhs = lhs;
 	binop->op = op;
@@ -87,6 +87,8 @@ t_expr *t_expr_init0(t_ident *ident)
 	expr->virt_reg = -1;
 	expr->num_ptr = 0;
 	expr->type_name = 0;
+	expr->truelist = NULL;
+	expr->falselist = NULL;
 
 	return expr;
 }
@@ -100,6 +102,8 @@ t_expr *t_expr_init1(t_numeric *num)
 	expr->virt_reg = -1;
 	expr->num_ptr = 0;
 	expr->type_name = 0;
+	expr->truelist = NULL;
+	expr->falselist = NULL;
 
 	return expr;
 }
@@ -113,6 +117,8 @@ t_expr *t_expr_init2(t_expr *lhs, int op, t_expr *rhs)
 	expr->virt_reg = -1;
 	expr->num_ptr = 0;
 	expr->type_name = 0;
+	expr->truelist = NULL;
+	expr->falselist = NULL;
 
 	return expr;
 }
@@ -126,6 +132,8 @@ t_expr *t_expr_init3(t_decl_spec *decl_spec)
 	expr->virt_reg = -1;
 	expr->num_ptr = 0;
 	expr->type_name = 0;
+	expr->truelist = NULL;
+	expr->falselist = NULL;
 
 	return expr;
 }
@@ -139,6 +147,8 @@ t_expr *t_expr_init4(t_expr * term, int oper)
 	expr->virt_reg = -1;
 	expr->num_ptr = 0;
 	expr->type_name = 0;
+	expr->truelist = NULL;
+	expr->falselist = NULL;
 
 	return expr;
 }
@@ -149,7 +159,7 @@ t_numeric *t_numeric_init0(char *cint)
 
 	n->cint = atoi(cint);
 	n->type = 0;
-	
+
 	return n;
 }
 
@@ -169,8 +179,8 @@ t_numeric *t_numeric_init2(int cint)
 
 	n->cint = cint;
 	n->type = 0;
-	
-	return n;	
+
+	return n;
 }
 
 t_decl_spec *t_decl_spec_init(int type, t_declr *decl)
@@ -178,7 +188,7 @@ t_decl_spec *t_decl_spec_init(int type, t_declr *decl)
 	t_decl_spec *decl_spec = malloc(sizeof(t_decl_spec));
 
 	decl_spec->type_name = type;
-	decl_spec->declarator = decl;	
+	decl_spec->declarator = decl;
 
 	return decl_spec;
 }
@@ -198,7 +208,7 @@ t_dir_declr *t_dir_declr_init0(t_ident *ident)
 	t_dir_declr *ddecl = malloc(sizeof(t_dir_declr));
 
 	ddecl->ident = ident;
-	ddecl->type = 0;	
+	ddecl->type = 0;
 
 	return ddecl;
 }
@@ -220,7 +230,7 @@ t_block *t_block_init(t_stmt *stmt)
 	block->statements = NULL;
 	block->num_statements = 0;
 	if (stmt) t_block_add(block, stmt);
-	
+
 	return block;
 }
 
@@ -462,3 +472,139 @@ void t_dir_declr_print(t_dir_declr *ddeclr)
 	else t_declr_print(ddeclr->decl);
 }
 
+void t_conditional_stmt_destroy(t_conditional_stmt *cstmt)
+{
+	if (!cstmt) return;
+
+	t_expr_destroy(cstmt->condition);
+	t_block_destroy(cstmt->block);
+	t_block_destroy(cstmt->otherwise);
+
+	free(cstmt);
+}
+
+void t_iterative_stmt_destroy(t_iterative_stmt * itstmt)
+{
+	if (!itstmt) return;
+
+	t_block_destroy(itstmt->block);
+	t_expr_destroy(itstmt->init);
+	t_expr_destroy(itstmt->cond);
+	t_expr_destroy(itstmt->iter);
+
+	free(itstmt);
+}
+
+void t_ident_destroy(t_ident *ident)
+{
+	if (!ident) return;
+
+	t_decl_spec_destroy(ident->decl_spec);
+
+	free(ident->ident);
+	free(ident);
+}
+
+void t_binop_destroy(t_binop *binop)
+{
+	if (!binop) return;
+
+	t_expr_destroy(binop->lhs);
+	t_expr_destroy(binop->rhs);
+
+	free(binop);
+}
+
+void t_unop_destroy(t_unop *unop)
+{
+	if (!unop) return;
+
+	t_expr_destroy(unop->term);
+
+	free(unop);
+}
+
+void t_expr_destroy(t_expr *expr)
+{
+	if (!expr) return;
+
+	if (expr->type == 0)
+		t_ident_destroy(expr->ident);
+	else if (expr->type == 1)
+		t_numeric_destroy(expr->cnumeric);
+	else if (expr->type == 2)
+		t_binop_destroy(expr->binop);
+	else if (expr->type == 3)
+		t_decl_spec_destroy(expr->decl_spec);
+	else if (expr->type == 4)
+		t_unop_destroy(expr->unop);
+
+	free(expr);
+}
+
+void t_numeric_destroy(t_numeric *num)
+{
+	if (!num) return;
+
+	free(num);
+}
+
+void t_decl_spec_destroy(t_decl_spec *decl_spec)
+{
+	if (!decl_spec) return;
+
+	t_declr_destroy(decl_spec->declarator);
+
+	free(decl_spec);
+}
+
+void t_declr_destroy(t_declr *decl)
+{
+	if (!decl) return;
+
+	t_dir_declr_destroy(decl->ddecl);
+
+	free(decl);
+}
+
+void t_dir_declr_destroy(t_dir_declr *ddecl)
+{
+	if (!ddecl) return;
+
+	if (ddecl->type == 0)
+		t_ident_destroy(ddecl->ident);
+	else if (ddecl->type == 1)
+		t_declr_destroy(ddecl->decl);
+
+	free(ddecl);
+}
+
+void t_block_destroy(t_block *block)
+{
+	if (!block) return;
+
+	for (int i = 0; i < block->num_statements; i++) {
+		t_stmt_destroy(block->statements[i]);
+	}
+
+	free(block->statements);
+	free(block);
+}
+
+void t_stmt_destroy(t_stmt *stmt)
+{
+	if (!stmt) return;
+
+	if (stmt->type == 0)
+		t_block_destroy(stmt->block);
+	else if (stmt->type == 1)
+		t_decl_spec_destroy(stmt->declaration);
+	else if (stmt->type == 2)
+		t_expr_destroy(stmt->expression);
+	else if (stmt->type == 3)
+		t_conditional_stmt_destroy(stmt->cstmt);
+	else if (stmt->type == 4)
+		t_iterative_stmt_destroy(stmt->itstmt);
+
+	free(stmt);
+}

@@ -133,6 +133,12 @@ char *oper_string(int oper)
 		case oper_div:
 			str = "/";
 			break;
+		case oper_or:
+			str = "||";
+			break;
+		case oper_and:
+			str = "&&";
+			break;
 		case oper_equal:
 			str = "==";
 			break;
@@ -223,12 +229,64 @@ tac_operand *tac_opr_from_expr(block_ctx *ctx, t_expr *expr)
 		}
 	} else {
 		printf("FATAL ERROR: NOT LEAF\n");
+		getchar();
 		exit(1);
 	}
 	if (expr->type == 4 && expr->unop->op == oper_deref) {
 		opr->ptr_access = 1;
 	}
 	return opr;
+}
+
+/*
+typedef struct backpatch
+{
+	int *labels;
+	tac_instr **instruction;
+	int num;
+} backpatch;
+*/
+
+backpatch *b_makelist(tac_instr *instr)
+{
+	backpatch *bp = malloc(sizeof(backpatch));
+
+	bp->instructions = malloc(sizeof(tac_instr*));
+	bp->instructions[0] = instr;
+	bp->num = 1;
+	bp->labels = malloc(sizeof(int));
+	bp->labels[0] = 0;
+
+	return bp;
+}
+
+backpatch *b_merge(backpatch *b1, backpatch *b2)
+{
+	if (!b1 || !b2) return NULL;
+
+	int oldsize = b1->num;
+	b1->num += b2->num;
+	b1->instructions = realloc(b1->instructions, sizeof(tac_instr*) * b1->num);
+	b1->labels = realloc(b1->labels, sizeof(int) * b1->num);
+
+	for (int i = 0; i < b2->num; i++) {
+		b1->instructions[oldsize+i] = b2->instructions[i];
+		b1->labels[oldsize+i] = b2->labels[i];
+	}
+
+	free(b2);
+	free(b2->instructions);
+	free(b2->labels);
+	return b1;
+}
+
+void b_patch(backpatch *b1, int label)
+{
+	if (!b1) return;
+
+	for (int i = 0; i < b1->num; i++) {
+		b1->instructions[i]->clabel = label;
+	}
 }
 
 tac_operand *tac_opr_temp(block_ctx *ctx)
@@ -245,17 +303,102 @@ tac_operand *tac_opr_temp(block_ctx *ctx)
 tac_instr *tac_new_label(block_ctx *ctx)
 {
 	tac_instr * instr = malloc(sizeof(tac_instr));
-
+    instr->truelist = NULL;
+    instr->falselist = NULL;
 	instr->tac_type = TAC_LABEL;
 	instr->label = block_ctx_get_label(ctx);
 
 	return instr;
 }
 
+int oper_is_conditional(int oper)
+{
+    return oper == oper_equal || oper == oper_notequal || oper == oper_gt || oper == oper_gte || oper == oper_lt || oper == oper_lte;
+}
+
+int oper_is_boolean(int oper)
+{
+    return oper == oper_and || oper == oper_or;
+}
+
+tac_instr *tac_from_cond(block_ctx *ctx, t_expr *expr)
+{
+    tac_instr *tac = malloc(sizeof(tac_instr));
+
+    tac->tac_type = TAC_CONDJMP;
+    tac->truelist = NULL;
+    tac->falselist = NULL;
+    if (expr->type == 2 && oper_is_boolean(expr->binop->op)) {
+    	tac = tac_from_bool(ctx, expr->binop);
+        tac->clabel = -1;
+    	return tac;
+    } else if (expr->type == 2) {
+        tac->coperator_t = inverse_cond(expr->binop->op);
+        tac->clhs = tac_opr_from_expr(ctx, expr->binop->lhs);
+        tac->crhs = tac_opr_from_expr(ctx, expr->binop->rhs);
+        tac->clabel = -1;
+
+        return tac;
+    }
+    tac->clhs = tac_opr_from_expr(ctx, expr);
+
+    tac->coperator_t = oper_equal;
+    tac->crhs = malloc(sizeof(tac_operand));
+    tac->crhs->constant_value = strdup("0");
+    tac->crhs->tac_type = TAC_CONST;
+    tac->clabel = -1;
+
+
+    return tac;
+}
+
+int inverse_cond(int cond)
+{
+    if (cond == oper_lt) return oper_gte;
+    if (cond == oper_lte) return oper_gt;
+    if (cond == oper_gt) return oper_lte;
+    if (cond == oper_gte) return oper_lt;
+    if (cond == oper_equal) return oper_equal;
+    if (cond == oper_notequal) return oper_equal;
+
+    return cond;
+}
+
+tac_instr *tac_from_bool(block_ctx *ctx, t_binop *binop)
+{
+    if (oper_is_conditional(binop->op)) {
+        tac_instr *tac = malloc(sizeof(tac_instr));
+
+        tac->tac_type = TAC_CONDJMP;
+        tac->truelist = NULL;
+        tac->falselist = NULL;
+        tac->clhs = tac_opr_from_expr(ctx, binop->lhs);
+        tac->crhs = tac_opr_from_expr(ctx, binop->rhs);
+        tac->coperator_t = binop->op;
+        tac->clabel = -1;
+
+        return tac;
+    }
+
+    tac_instr *t1 = tac_from_cond(ctx, binop->lhs);
+
+    tac_instr *t2 = tac_from_cond(ctx, binop->rhs);
+    t1->next = t2;
+
+    if (binop->op == oper_and) {
+
+    } else if (binop->op == oper_or) {
+    }
+
+    return t1;
+}
+
 tac_instr *tac_from_binop(block_ctx *ctx, t_binop *binop)
 {
 	tac_instr *tac = malloc(sizeof(tac_instr));
 
+    tac->truelist = NULL;
+    tac->falselist = NULL;
 	//Is copy instruction?
 	if (binop->op == oper_assign) {
 		tac->tac_type = TAC_COPY;
@@ -318,6 +461,8 @@ tac_instr *tac_from_unop(block_ctx *ctx, t_unop *unop)
 {
 	tac_instr *tac = malloc(sizeof(tac_instr));
 
+    tac->truelist = NULL;
+    tac->falselist = NULL;
 	tac->tac_type = TAC_UASN;
 	tac->temp_dst = tac_opr_temp(ctx);
 	tac->operator_t = unop->op;
@@ -331,6 +476,8 @@ tac_instr *tac_goto(block_ctx * ctx, int label)
 {
 	tac_instr *tac = malloc(sizeof(tac_instr));
 
+    tac->truelist = NULL;
+    tac->falselist = NULL;
 	tac->tac_type = TAC_GOTO;
 	tac->label = label;
 
@@ -390,15 +537,23 @@ tac_instr *tac_from_cstmt(block_ctx *ctx, t_conditional_stmt *cstmt, int label)
 	tac_instr *tac = malloc(sizeof(tac_instr));
 
 	tac->tac_type = TAC_CONDJMP;
+    tac->truelist = NULL;
+    tac->falselist = NULL;
+    if (cstmt->condition->type == 2) {
+        tac->coperator_t = inverse_cond(cstmt->condition->binop->op);
+        tac->clhs = tac_opr_from_expr(ctx, cstmt->condition->binop->lhs);
+        tac->crhs = tac_opr_from_expr(ctx, cstmt->condition->binop->rhs);
+        tac->clabel = label;
+
+        return tac;
+    }
 
 	tac->clhs = tac_opr_from_expr(ctx, cstmt->condition);
 
 	tac->coperator_t = oper_equal;
 	tac->clabel = label;
 	tac->crhs = malloc(sizeof(tac_operand));
-	char buf[16];
-	snprintf(buf, 16, "0");
-	tac->crhs->constant_value = strdup(buf);
+	tac->crhs->constant_value = strdup("0");
 	tac->crhs->tac_type = TAC_CONST;
 
 	return tac;
@@ -409,7 +564,8 @@ tac_instr *tac_from_itstmt(block_ctx *ctx, t_iterative_stmt *itstmt, int label)
 	tac_instr *tac = malloc(sizeof(tac_instr));
 
 	tac->tac_type = TAC_CONDJMP;
-
+    tac->truelist = NULL;
+    tac->falselist = NULL;
 	tac->clhs = tac_opr_from_expr(ctx, itstmt->cond);
 	if (!tac->clhs) {
 		tac->tac_type = TAC_GOTO;
@@ -482,9 +638,19 @@ void t_block_convert(block_ctx *p, t_block *block)
 	}
 }
 
+tac_instr *block_ctx_get_last(block_ctx *ctx)
+{
+    tac_instr * cur = ctx->start;
+    while (cur && cur->next) cur = cur->next;
+    return cur;
+}
+
+
 void t_stmt_convert(block_ctx *ctx, t_stmt *statement)
 {
 	if (!statement) return;
+    tac_instr *first = block_ctx_get_last(ctx);
+
 	switch (statement->type) {
 		case 0:
 			t_block_convert(ctx, statement->block);
@@ -501,8 +667,12 @@ void t_stmt_convert(block_ctx *ctx, t_stmt *statement)
 			tac_instr *label1 = tac_new_label(ctx);
 			tac_instr *label2 = NULL;
 			if (statement->cstmt->otherwise) label2 = tac_new_label(ctx);
+			//t_expr_convert(ctx, statement->cstmt->condition);
+			//tac_instr *condjmp = tac_from_cstmt(ctx, statement->cstmt, label1->label);
+			
 			t_expr_convert(ctx, statement->cstmt->condition);
-			tac_instr *condjmp = tac_from_cstmt(ctx, statement->cstmt, label1->label);
+			tac_instr *condjmp = tac_from_cond(ctx, statement->cstmt->condition);
+			condjmp->clabel = label1->label;
 			block_ctx_apphend_instr(ctx, condjmp);
 			t_block_convert(ctx, statement->cstmt->block);
 			if (label2) block_ctx_apphend_instr(ctx, tac_goto(ctx, label2->label));
