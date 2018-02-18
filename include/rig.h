@@ -11,8 +11,7 @@
  * instruction
  * */
 
-typedef struct rig_node
-{
+typedef struct rig_node {
 	int value;
 
 	int tmp;
@@ -21,8 +20,7 @@ typedef struct rig_node
 	int num_edges;
 } rig_node;
 
-struct live_tmp
-{
+struct live_tmp {
 	int start;
 	int end;
 	int tmp;
@@ -34,8 +32,7 @@ struct live_tmp
  * */
 
 /*Basic Block For CFG*/
-typedef struct basic_block
-{
+typedef struct basic_block {
 	tac_instr *block;
 	int len;
 
@@ -55,16 +52,16 @@ typedef struct basic_block
 } basic_block;
 
 /*Basic Block Functions*/
-basic_block *basic_block_init(tac_instr *first, tac_instr **next);
-void basic_block_destroy(basic_block *block);
+basic_block *basic_block_init(tac_instr * first, tac_instr ** next);
+void basic_block_destroy(basic_block * block);
 
-void basic_block_apred(basic_block *blk, basic_block *pred);
-void basic_block_asucc(basic_block *blk, basic_block *succ);
+void basic_block_apred(basic_block * blk, basic_block * pred);
+void basic_block_asucc(basic_block * blk, basic_block * succ);
 
-tac_instr *basic_block_start(basic_block *block);
-tac_instr *basic_block_last(basic_block *block);
+tac_instr *basic_block_start(basic_block * block);
+tac_instr *basic_block_last(basic_block * block);
 
-basic_block *cfg_construct(tac_instr *enter);
+basic_block *cfg_construct(tac_instr * enter);
 void basic_block_initialize(basic_block * block);
 /*	a=0
  *L1:   b=a+1
@@ -104,8 +101,8 @@ void basic_block_initialize(basic_block * block);
  *
  * */
 
-int defined_values(tac_instr *instr);
-void used_values(tac_instr *instr, int **arr, int *num);
+int defined_values(tac_instr * instr);
+void used_values(tac_instr * instr, int **arr, int *num);
 void intarr_add(int **arr, int *num, int val);
 
 #endif

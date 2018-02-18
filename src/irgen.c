@@ -44,11 +44,12 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 		//quad_from_cond(gen, stmt->cstmt->condition);
 		quad_gen_add(gen, block_start);
 		block_gen(gen, stmt->cstmt->block);
-        if (else_stmt) {
-            quadruple *jquad = quad_jump(quad_jmp, else_stmt->label);
-            quad_gen_add(gen, jquad);
-        }
-        quad_gen_add(gen, block_end);
+		if (else_stmt) {
+			quadruple *jquad =
+			    quad_jump(quad_jmp, else_stmt->label);
+			quad_gen_add(gen, jquad);
+		}
+		quad_gen_add(gen, block_end);
 		if (stmt->cstmt->condition->falselist)
 			backpatch(stmt->cstmt->condition->falselist,
 				  block_end->label);
@@ -56,30 +57,36 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			backpatch(stmt->cstmt->condition->truelist,
 				  block_start->label);
 		if (else_stmt) {
-            block_gen(gen, stmt->cstmt->otherwise);
+			block_gen(gen, stmt->cstmt->otherwise);
 			quad_gen_add(gen, else_stmt);
 		}
 		quadruple *else_start = NULL;
 
 		break;
 	case 4:		//for/while loops
-        if (stmt->itstmt->type == 0) {
-            quadruple *block_start = quad_label(quad_gen_request_label(gen));
-            quadruple *comp_start = quad_label(quad_gen_request_label(gen));
-            expr_gen(gen, stmt->itstmt->init);
-            quad_gen_add(gen, quad_jump(quad_jmp, comp_start->label));
-            quad_gen_add(gen, block_start);
-            block_gen(gen, stmt->itstmt->block);
-            expr_gen(gen, stmt->itstmt->iter);
-            quad_gen_add(gen, comp_start);
-            expr_gen(gen, stmt->itstmt->cond);
-            quadruple *end = quad_label(quad_gen_request_label(gen));
-            quad_gen_add(gen, end);
-            if (stmt->itstmt->cond && stmt->itstmt->cond->truelist)
-                backpatch(stmt->itstmt->cond->truelist, block_start->label);
-            if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
-                backpatch(stmt->itstmt->cond->falselist, end->label);
-        }
+		if (stmt->itstmt->type == 0) {
+			quadruple *block_start =
+			    quad_label(quad_gen_request_label(gen));
+			quadruple *comp_start =
+			    quad_label(quad_gen_request_label(gen));
+			expr_gen(gen, stmt->itstmt->init);
+			quad_gen_add(gen,
+				     quad_jump(quad_jmp, comp_start->label));
+			quad_gen_add(gen, block_start);
+			block_gen(gen, stmt->itstmt->block);
+			expr_gen(gen, stmt->itstmt->iter);
+			quad_gen_add(gen, comp_start);
+			expr_gen(gen, stmt->itstmt->cond);
+			quadruple *end =
+			    quad_label(quad_gen_request_label(gen));
+			quad_gen_add(gen, end);
+			if (stmt->itstmt->cond && stmt->itstmt->cond->truelist)
+				backpatch(stmt->itstmt->cond->truelist,
+					  block_start->label);
+			if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
+				backpatch(stmt->itstmt->cond->falselist,
+					  end->label);
+		}
 		break;
 	default:
 		break;		//Dont add declarations to quads
@@ -117,11 +124,13 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 
 	} else if (expr->type == 4) {
 		if (expr->unop->term->type != 2 && expr->unop->term->type != 4) {
-			if (expr->unop->op != oper_deref && expr->unop->op != oper_ref)
+			if (expr->unop->op != oper_deref
+			    && expr->unop->op != oper_ref)
 				quad_from_unop(gen, expr);
 		} else {
 			expr_gen(gen, expr->unop->term);
-			if (expr->unop->op != oper_deref && expr->unop->op != oper_ref)
+			if (expr->unop->op != oper_deref
+			    && expr->unop->op != oper_ref)
 				quad_from_unop(gen, expr);
 		}
 
@@ -160,14 +169,14 @@ quad_op quad_map_operation(int oper)
 		return quad_jl;
 	case oper_neg:
 		return quad_neg;
-    case oper_incpre:
-        return quad_add;
-    case oper_incpost:
-        return quad_add;
-    case oper_decpre:
-        return quad_sub;
-    case oper_decpost:
-        return quad_sub;
+	case oper_incpre:
+		return quad_add;
+	case oper_incpost:
+		return quad_add;
+	case oper_decpre:
+		return quad_sub;
+	case oper_decpost:
+		return quad_sub;
 	}
 
 	return quad_none;
@@ -248,7 +257,7 @@ void quad_from_cond(quad_gen * gen, t_expr * expr)
  * Add instruction before the current one to adjust for
  * pointer size. Ex *(arr+i) -> *(arr+i*4)
  * */
-int quad_ptr_scale(quad_gen *gen, t_expr *expr)
+int quad_ptr_scale(quad_gen * gen, t_expr * expr)
 {
 	quadruple *quad = NULL;
 
@@ -258,7 +267,7 @@ int quad_ptr_scale(quad_gen *gen, t_expr *expr)
 
 	quad_op op = quad_map_operation(expr->binop->op);
 
-    int lptr_op = expr->binop->lhs->num_ptr > 0;
+	int lptr_op = expr->binop->lhs->num_ptr > 0;
 	lptr_op = lptr_op && (expr->binop->rhs->num_ptr == 0);
 	lptr_op = lptr_op && (expr->binop->op == oper_add
 			      || expr->binop->op == oper_sub);
@@ -275,7 +284,7 @@ int quad_ptr_scale(quad_gen *gen, t_expr *expr)
 
 	if (lptr_op) {
 		t_expr *ebop;
-    	ebop =
+		ebop =
 		    t_expr_init2(expr->binop->rhs, oper_mult,
 				 t_expr_init1(t_numeric_init2(size)));
 		quad_from_binop(gen, ebop);
@@ -302,7 +311,7 @@ int quad_ptr_scale(quad_gen *gen, t_expr *expr)
 		quad_gen_add(gen, quad_general(op, result, arg1, arg2));
 		return 1;
 	}
-    return 0;
+	return 0;
 }
 
 void quad_from_binop(quad_gen * gen, t_expr * expr)
@@ -321,8 +330,8 @@ void quad_from_binop(quad_gen * gen, t_expr * expr)
 		quad = quad_general(op, arg1, arg2, NULL);
 	} else {
 		if (quad_ptr_scale(gen, expr))
-            return;
-        quad_operand *result = quad_new_temp(gen);
+			return;
+		quad_operand *result = quad_new_temp(gen);
 		arg1 = quad_opr_from_expr(gen, expr->binop->lhs);
 		arg2 = quad_opr_from_expr(gen, expr->binop->rhs);
 		quad = quad_general(op, result, arg1, arg2);
@@ -362,30 +371,34 @@ void quad_from_binop(quad_gen * gen, t_expr * expr)
 
 void quad_from_unop(quad_gen * gen, t_expr * expr)
 {
-    quad_op op = quad_map_operation(expr->unop->op);
+	quad_op op = quad_map_operation(expr->unop->op);
 	quad_operand *result = quad_new_temp(gen);
 	quad_operand *arg1 = quad_opr_from_expr(gen, expr->unop->term);
-    quad_operand *arg2 = NULL;
+	quad_operand *arg2 = NULL;
 
-    if (expr->unop->op == oper_incpost || expr->unop->op == oper_decpost) {
-        quad_operand *arg2 = quad_operand_init();
-        arg2->type = Q_CONST;
-        arg2->constant = 1;
+	if (expr->unop->op == oper_incpost || expr->unop->op == oper_decpost) {
+		quad_operand *arg2 = quad_operand_init();
+		arg2->type = Q_CONST;
+		arg2->constant = 1;
 
-        quad_operand *arg1d = quad_opr_from_expr(gen, expr->unop->term);
-        quad_operand *arg1dd = quad_opr_from_expr(gen, expr->unop->term);
-        quad_gen_add(gen, quad_general(quad_assign, result, arg1, NULL));
-        quad_gen_add(gen, quad_general(op, arg1d, arg1dd, arg2));
-    } else if (expr->unop->op == oper_decpre || expr->unop->op == oper_incpre) {
-        quad_operand * r1 = quad_opr_from_expr(gen, expr->unop->term);
-        quad_operand * r2 = quad_opr_from_expr(gen, expr->unop->term);
-        quad_operand * inc = quad_operand_init();
-        inc->type = Q_CONST;
-        inc->constant = 1;
+		quad_operand *arg1d = quad_opr_from_expr(gen, expr->unop->term);
+		quad_operand *arg1dd =
+		    quad_opr_from_expr(gen, expr->unop->term);
+		quad_gen_add(gen,
+			     quad_general(quad_assign, result, arg1, NULL));
+		quad_gen_add(gen, quad_general(op, arg1d, arg1dd, arg2));
+	} else if (expr->unop->op == oper_decpre
+		   || expr->unop->op == oper_incpre) {
+		quad_operand *r1 = quad_opr_from_expr(gen, expr->unop->term);
+		quad_operand *r2 = quad_opr_from_expr(gen, expr->unop->term);
+		quad_operand *inc = quad_operand_init();
+		inc->type = Q_CONST;
+		inc->constant = 1;
 
-        quad_gen_add(gen, quad_general(op, r1, r2, inc));
-        quad_gen_add(gen, quad_general(quad_assign, result, arg1, NULL));
-    } else {
-        quad_gen_add(gen, quad_general(op, result, arg1, NULL));
-    }
+		quad_gen_add(gen, quad_general(op, r1, r2, inc));
+		quad_gen_add(gen,
+			     quad_general(quad_assign, result, arg1, NULL));
+	} else {
+		quad_gen_add(gen, quad_general(op, result, arg1, NULL));
+	}
 }

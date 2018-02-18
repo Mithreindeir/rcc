@@ -68,58 +68,54 @@ typedef struct t_param_list t_param_list;
 typedef struct t_conditional_stmt t_conditional_stmt;
 typedef struct t_iterative_stmt t_iterative_stmt;
 
-struct t_call
-{
+struct t_call {
 	t_ident *ident;
 	t_expr **expr_list;
 	int num_expr;
 };
 
-t_call *t_call_init(t_ident *ident, t_expr **expr_l, int num_expr);
+t_call *t_call_init(t_ident * ident, t_expr ** expr_l, int num_expr);
 
-struct t_func_def
-{
+struct t_func_def {
 	t_decl_spec *decl_spec;
 	t_param_list *parameter;
 	t_block *block;
 };
 
-struct t_param_list
-{
+struct t_param_list {
 	t_decl_spec *params;
 	int num_params;
 };
 
-t_call *t_call_init(t_ident *ident, t_expr **expr_l, int num_expr);
+t_call *t_call_init(t_ident * ident, t_expr ** expr_l, int num_expr);
 
-struct t_conditional_stmt
-{
+struct t_conditional_stmt {
 	t_expr *condition;
 	t_block *block;
 	t_block *otherwise;
 };
 
-t_conditional_stmt *t_conditional_stmt_init(t_expr *condition, t_block *block, t_block *otherwise);
+t_conditional_stmt *t_conditional_stmt_init(t_expr * condition, t_block * block,
+					    t_block * otherwise);
 
-struct t_iterative_stmt
-{
-		t_block *block;
+struct t_iterative_stmt {
+	t_block *block;
 
-		t_expr *init;
-		t_expr *cond;
-		t_expr *iter;
+	t_expr *init;
+	t_expr *cond;
+	t_expr *iter;
 
-		int first;
+	int first;
 
-		int type;
+	int type;
 };
 
-t_iterative_stmt *t_iterative_stmt_init0(t_expr *init, t_expr *cond, t_expr *iter, t_block *block);
-t_iterative_stmt *t_iterative_stmt_init1(t_expr *cond, t_block *block, int first);
+t_iterative_stmt *t_iterative_stmt_init0(t_expr * init, t_expr * cond,
+					 t_expr * iter, t_block * block);
+t_iterative_stmt *t_iterative_stmt_init1(t_expr * cond, t_block * block,
+					 int first);
 
-
-struct t_ident
-{
+struct t_ident {
 	char *ident;
 	//Type information to be filled with later steps
 	t_decl_spec *decl_spec;
@@ -127,25 +123,22 @@ struct t_ident
 
 t_ident *t_ident_init(char *ident);
 
-struct t_binop
-{
+struct t_binop {
 	t_expr *lhs;
 	int op;
 	t_expr *rhs;
 };
 
-t_binop *t_binop_init(t_expr *lhs, int op, t_expr *rhs);
+t_binop *t_binop_init(t_expr * lhs, int op, t_expr * rhs);
 
-struct t_unop
-{
+struct t_unop {
 	int op;
 	t_expr *term;
 };
 
-t_unop *t_unop_init(int op, t_expr *s);
+t_unop *t_unop_init(int op, t_expr * s);
 
-struct t_expr
-{
+struct t_expr {
 	union {
 		t_ident *ident;
 		t_numeric *cnumeric;
@@ -161,16 +154,14 @@ struct t_expr
 	int type_name;
 };
 
-t_expr *t_expr_init0(t_ident *ident);
-t_expr *t_expr_init1(t_numeric *num);
-t_expr *t_expr_init2(t_expr *lhs, int op, t_expr *rhs);
-t_expr *t_expr_init3(t_decl_spec *decl_spec);
-t_expr *t_expr_init4(t_expr *term, int oper);
-void t_expr_destroy(t_expr *expr);
+t_expr *t_expr_init0(t_ident * ident);
+t_expr *t_expr_init1(t_numeric * num);
+t_expr *t_expr_init2(t_expr * lhs, int op, t_expr * rhs);
+t_expr *t_expr_init3(t_decl_spec * decl_spec);
+t_expr *t_expr_init4(t_expr * term, int oper);
+void t_expr_destroy(t_expr * expr);
 
-
-struct t_numeric
-{
+struct t_numeric {
 	union {
 		long long int cint;
 		double cdouble;
@@ -181,27 +172,25 @@ struct t_numeric
 t_numeric *t_numeric_init0(char *cint);
 t_numeric *t_numeric_init1(char *cdouble);
 t_numeric *t_numeric_init2(int cint);
-void t_numeric_destroy(t_numeric *num);
+void t_numeric_destroy(t_numeric * num);
 
-struct t_decl_spec
-{
+struct t_decl_spec {
 	int type_name;
 	t_declr *declarator;
 };
 
-t_decl_spec *t_decl_spec_init(int type, t_declr *decl);
-void t_decl_spec_destroy(t_decl_spec *decl_spec);
+t_decl_spec *t_decl_spec_init(int type, t_declr * decl);
+void t_decl_spec_destroy(t_decl_spec * decl_spec);
 
 struct t_declr {
 	int ptr;
 	t_dir_declr *ddecl;
 };
 
-t_declr *t_declr_init(int n_ptr, t_dir_declr *ddecl);
-void t_declr_destroy(t_declr *decl);
+t_declr *t_declr_init(int n_ptr, t_dir_declr * ddecl);
+void t_declr_destroy(t_declr * decl);
 
-struct t_dir_declr
-{
+struct t_dir_declr {
 	union {
 		t_ident *ident;
 		t_declr *decl;
@@ -209,23 +198,21 @@ struct t_dir_declr
 	int type;
 };
 
-t_dir_declr *t_dir_declr_init0(t_ident *ident);
-t_dir_declr *t_dir_declr_init1(t_declr *decl);
+t_dir_declr *t_dir_declr_init0(t_ident * ident);
+t_dir_declr *t_dir_declr_init1(t_declr * decl);
 void t_dir_declr_destroy(t_dir_declr * ddecl);
 
-struct t_block
-{
+struct t_block {
 	t_stmt **statements;
 	int num_statements;
 };
 
-t_block *t_block_init(t_stmt *stmt);
-t_block *t_block_add(t_block *block, t_stmt *statement);
-t_block *t_block_merge(t_block *b1, t_block *b2);
-void t_block_destroy(t_block *block);
+t_block *t_block_init(t_stmt * stmt);
+t_block *t_block_add(t_block * block, t_stmt * statement);
+t_block *t_block_merge(t_block * b1, t_block * b2);
+void t_block_destroy(t_block * block);
 
-struct t_stmt
-{
+struct t_stmt {
 	union {
 		t_block *block;
 		t_decl_spec *declaration;
@@ -236,22 +223,22 @@ struct t_stmt
 	int type;
 };
 
-t_stmt *t_stmt_init0(t_block *block);
-t_stmt *t_stmt_init1(t_decl_spec *declaration);
-t_stmt *t_stmt_init2(t_expr *expr);
-t_stmt *t_stmt_init3(t_conditional_stmt *cstmt);
-t_stmt *t_stmt_init4(t_iterative_stmt *itstmt);
-void t_stmt_destroy(t_stmt *stmt);
+t_stmt *t_stmt_init0(t_block * block);
+t_stmt *t_stmt_init1(t_decl_spec * declaration);
+t_stmt *t_stmt_init2(t_expr * expr);
+t_stmt *t_stmt_init3(t_conditional_stmt * cstmt);
+t_stmt *t_stmt_init4(t_iterative_stmt * itstmt);
+void t_stmt_destroy(t_stmt * stmt);
 
 /*Print Functions*/
-void t_block_print(t_block *block);
-void t_stmt_print(t_stmt *statement);
-void t_expr_print(t_expr *expr);
-void t_num_print(t_numeric *num);
-void t_binop_print(t_binop *bin);
-void t_unop_print(t_unop *unop);
-void t_decl_spec_print(t_decl_spec *decl_spec);
-void t_declr_print(t_declr *declr);
-void t_dir_declr_print(t_dir_declr *ddeclr);
+void t_block_print(t_block * block);
+void t_stmt_print(t_stmt * statement);
+void t_expr_print(t_expr * expr);
+void t_num_print(t_numeric * num);
+void t_binop_print(t_binop * bin);
+void t_unop_print(t_unop * unop);
+void t_decl_spec_print(t_decl_spec * decl_spec);
+void t_declr_print(t_declr * declr);
+void t_dir_declr_print(t_dir_declr * ddeclr);
 
 #endif
