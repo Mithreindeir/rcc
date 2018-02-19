@@ -1,8 +1,9 @@
 #include "../include/irgen.h"
 
-void func_gen(quad_gen *gen, t_func_def *func)
+void func_gen(quad_gen * gen, t_func_def * func)
 {
-	if (!func) return;
+	if (!func)
+		return;
 
 	gen->symt = symbol_table_next(gen->symt);
 	block_gen(gen, func->block);
@@ -104,26 +105,33 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 				backpatch(stmt->itstmt->cond->falselist,
 					  end->label);
 		} else {
-	            quadruple *block_start = quad_label(quad_gen_request_label(gen));
-	            quadruple *comp_start = quad_label(quad_gen_request_label(gen));
+			quadruple *block_start =
+			    quad_label(quad_gen_request_label(gen));
+			quadruple *comp_start =
+			    quad_label(quad_gen_request_label(gen));
 
-	            if (!stmt->itstmt->first) {
-	                quad_gen_add(gen, quad_jump(quad_jmp, comp_start->label));
-	            }
-	            quad_gen_add(gen, block_start);
-	            gen->symt = symbol_table_next(gen->symt);
-		    block_gen(gen, stmt->itstmt->block);
-	            quad_gen_add(gen, comp_start);
-	            expr_gen(gen, stmt->itstmt->cond);
-		    gen->symt = symbol_table_pop(gen->symt);
-	            quadruple *end = quad_label(quad_gen_request_label(gen));
-	            quad_gen_add(gen, end);
+			if (!stmt->itstmt->first) {
+				quad_gen_add(gen,
+					     quad_jump(quad_jmp,
+						       comp_start->label));
+			}
+			quad_gen_add(gen, block_start);
+			gen->symt = symbol_table_next(gen->symt);
+			block_gen(gen, stmt->itstmt->block);
+			quad_gen_add(gen, comp_start);
+			expr_gen(gen, stmt->itstmt->cond);
+			gen->symt = symbol_table_pop(gen->symt);
+			quadruple *end =
+			    quad_label(quad_gen_request_label(gen));
+			quad_gen_add(gen, end);
 
-	            if (stmt->itstmt->cond && stmt->itstmt->cond->truelist)
-	                backpatch(stmt->itstmt->cond->truelist, block_start->label);
-	            if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
-        	        backpatch(stmt->itstmt->cond->falselist, end->label);
-        }
+			if (stmt->itstmt->cond && stmt->itstmt->cond->truelist)
+				backpatch(stmt->itstmt->cond->truelist,
+					  block_start->label);
+			if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
+				backpatch(stmt->itstmt->cond->falselist,
+					  end->label);
+		}
 		break;
 	default:
 		break;		//Dont add declarations to quads

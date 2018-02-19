@@ -1,6 +1,7 @@
 #include "../include/ast.h"
 
-t_func_def *t_func_def_init(t_decl_spec *decl_spec, t_decl_list *dlist, t_block *block)
+t_func_def *t_func_def_init(t_decl_spec * decl_spec, t_decl_list * dlist,
+			    t_block * block)
 {
 	t_func_def *func = malloc(sizeof(t_func_def));
 
@@ -11,7 +12,8 @@ t_func_def *t_func_def_init(t_decl_spec *decl_spec, t_decl_list *dlist, t_block 
 
 	if (dlist) {
 		func->num_param = dlist->num_decls;
-		func->decl_list = malloc(sizeof(t_decl_spec*) * func->num_param);
+		func->decl_list =
+		    malloc(sizeof(t_decl_spec *) * func->num_param);
 		for (int i = 0; i < dlist->num_decls; i++) {
 			if (dlist->decls[i]->type == 3) {
 				func->decl_list[i] = dlist->decls[i]->decl_spec;
@@ -29,9 +31,10 @@ t_func_def *t_func_def_init(t_decl_spec *decl_spec, t_decl_list *dlist, t_block 
 	return func;
 }
 
-void t_func_def_destroy(t_func_def *func)
+void t_func_def_destroy(t_func_def * func)
 {
-	if (!func) return;
+	if (!func)
+		return;
 
 	t_block_destroy(func->block);
 	t_decl_spec_destroy(func->decl_spec);
@@ -44,31 +47,33 @@ void t_func_def_destroy(t_func_def *func)
 	free(func);
 }
 
-
-t_decl_list *t_decl_list_init(t_expr *decl)
+t_decl_list *t_decl_list_init(t_expr * decl)
 {
-	t_decl_list * dlist = malloc(sizeof(t_decl_list));
+	t_decl_list *dlist = malloc(sizeof(t_decl_list));
 
-	dlist->decls = malloc(sizeof(t_expr*));
+	dlist->decls = malloc(sizeof(t_expr *));
 	dlist->num_decls = 1;
 	dlist->decls[0] = decl;
 
 	return dlist;
 }
 
-t_decl_list *t_decl_list_add(t_decl_list *dlist, t_expr * decl)
+t_decl_list *t_decl_list_add(t_decl_list * dlist, t_expr * decl)
 {
-	if (!decl) return dlist;
+	if (!decl)
+		return dlist;
 	dlist->num_decls++;
-	dlist->decls = realloc(dlist->decls, sizeof(t_expr*) * dlist->num_decls);
-	dlist->decls[dlist->num_decls-1] = decl;
+	dlist->decls =
+	    realloc(dlist->decls, sizeof(t_expr *) * dlist->num_decls);
+	dlist->decls[dlist->num_decls - 1] = decl;
 
 	return dlist;
 }
 
-void t_decl_list_destroy(t_decl_list *dlist)
+void t_decl_list_destroy(t_decl_list * dlist)
 {
-	if (!dlist) return;
+	if (!dlist)
+		return;
 
 	for (int i = 0; i < dlist->num_decls; i++) {
 		t_expr_destroy(dlist->decls[i]);

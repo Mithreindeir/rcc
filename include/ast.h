@@ -84,18 +84,18 @@ struct t_func_def {
 	t_block *block;
 };
 
-t_func_def *t_func_def_init(t_decl_spec *decl_spec, t_decl_list *dlist, t_block *block);
-void t_func_def_destroy(t_func_def *func);
+t_func_def *t_func_def_init(t_decl_spec * decl_spec, t_decl_list * dlist,
+			    t_block * block);
+void t_func_def_destroy(t_func_def * func);
 
 struct t_decl_list {
-	t_expr ** decls;
+	t_expr **decls;
 	int num_decls;
 };
 
 t_decl_list *t_decl_list_init(t_expr * decl);
 t_decl_list *t_decl_list_add(t_decl_list * dlist, t_expr * decl);
-void t_decl_list_destroy(t_decl_list *dlist);
-
+void t_decl_list_destroy(t_decl_list * dlist);
 
 struct t_conditional_stmt {
 	t_expr *condition;
