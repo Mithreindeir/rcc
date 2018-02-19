@@ -4,7 +4,10 @@
 #include "ast.h"
 #include "symtable.h"
 
-/*Performs Post Order Traversal on AST and fills in type information*/
+/*Performs Post Order Traversal on AST and populates the symbol table
+ * checking type errors
+ * */
+void t_trans_unit_check(symbol_table * symt, t_trans_unit * unit);
 void t_func_check(symbol_table * symt, t_func_def * func);
 void t_block_check(symbol_table * symt, t_block * block);
 void t_stmt_check(symbol_table * symt, t_stmt * statement);

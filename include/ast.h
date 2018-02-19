@@ -68,6 +68,29 @@ typedef struct t_param_list t_param_list;
 typedef struct t_conditional_stmt t_conditional_stmt;
 typedef struct t_iterative_stmt t_iterative_stmt;
 typedef struct t_decl_list t_decl_list;
+typedef struct t_external_def t_external_def;
+typedef struct t_trans_unit t_trans_unit;
+
+struct t_trans_unit {
+	t_external_def **definitions;
+	int num_def;
+};
+
+t_trans_unit *t_trans_unit_init(t_external_def * def);
+t_trans_unit *t_trans_unit_add(t_trans_unit * trans, t_external_def * def);
+void t_trans_unit_destroy(t_trans_unit * trans);
+
+struct t_external_def {
+	union {
+		t_func_def *func;
+		t_expr *declaration;
+	};
+	int type;
+};
+
+t_external_def *t_external_def_init0(t_func_def * func);
+t_external_def *t_external_def_init1(t_expr * decl);
+void t_external_def_destroy(t_external_def * def);
 
 struct t_call {
 	t_ident *ident;

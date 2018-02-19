@@ -5,7 +5,7 @@
 
 	#define YYERROR_VERBOSE
 
-	t_func_def *main_func;
+	t_trans_unit *tunit;
 	symbol_table *global_table;
 
 	extern int yylex();
@@ -24,6 +24,7 @@
 	t_func_def *func;
 	t_decl_list *dlist;
 	t_block *block;
+	t_external_def *externdef;
 	t_stmt *statement;
 	char *string;
 	int token;
@@ -57,6 +58,7 @@
 %type <itstmt> iter_stmt
 %type <dlist> decl_list
 %type <func> func_def
+%type <externdef> external_def
 
 /*Operator Precedence To Resolve Conflicts*/
 %left T_ASN
@@ -67,14 +69,20 @@
 %right T_IF T_ELSE
 
 
-%start program
+%start trans_unit
 
 %%
 
-program
-	: func_def { main_func = $1; }
-	//: stmt_list { main_block = $1; }
+trans_unit
+	: external_def { tunit = t_trans_unit_init($1); }	
+	| trans_unit external_def { tunit = t_trans_unit_add(tunit, $2); }
 	;
+
+external_def
+	: func_def { $$ = t_external_def_init0($1); }
+	| declaration { $$ = t_external_def_init1($1); }
+	;
+
 
 decl_list
 	: %empty { $$ = 0; } 

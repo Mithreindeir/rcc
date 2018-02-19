@@ -1,7 +1,20 @@
 #include "../include/typecheck.h"
 
+void t_trans_unit_check(symbol_table * symt, t_trans_unit * unit)
+{
+	for (int i = 0; i < unit->num_def; i++) {
+		if (unit->definitions[i]->type == 0) {
+			t_func_check(symt, unit->definitions[i]->func);
+		} else if (unit->definitions[i]->type == 1) {
+			t_expr_check(symt, unit->definitions[i]->declaration);
+		}
+	}
+}
+
 void t_func_check(symbol_table * symt, t_func_def * func)
 {
+	symbol_table_insert_decl_spec(symt, func->decl_spec);
+
 	symt = symbol_table_push(symt);
 
 	for (int i = 0; i < func->num_param; i++) {

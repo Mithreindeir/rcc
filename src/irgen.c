@@ -1,5 +1,19 @@
 #include "../include/irgen.h"
 
+void unit_gen(quad_gen * gen, t_trans_unit * unit)
+{
+	if (!unit)
+		return;
+
+	for (int i = 0; i < unit->num_def; i++) {
+		if (unit->definitions[i]->type == 0) {
+			func_gen(gen, unit->definitions[i]->func);
+		} else if (unit->definitions[i]->type == 1) {
+			expr_gen(gen, unit->definitions[i]->declaration);
+		}
+	}
+}
+
 void func_gen(quad_gen * gen, t_func_def * func)
 {
 	if (!func)

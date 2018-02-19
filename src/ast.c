@@ -1,5 +1,74 @@
 #include "../include/ast.h"
 
+t_trans_unit *t_trans_unit_init(t_external_def * def)
+{
+	t_trans_unit *trans = malloc(sizeof(t_trans_unit));
+
+	trans->definitions = malloc(sizeof(t_external_def *));
+	trans->num_def = 1;
+	trans->definitions[0] = def;
+
+	return trans;
+}
+
+t_trans_unit *t_trans_unit_add(t_trans_unit * trans, t_external_def * def)
+{
+	trans->num_def++;
+	trans->definitions =
+	    realloc(trans->definitions,
+		    sizeof(t_external_def *) * trans->num_def);
+	trans->definitions[trans->num_def - 1] = def;
+
+	return trans;
+}
+
+void t_trans_unit_destroy(t_trans_unit * trans)
+{
+	if (!trans)
+		return;
+
+	for (int i = 0; i < trans->num_def; i++) {
+		t_external_def_destroy(trans->definitions[i]);
+	}
+
+	free(trans->definitions);
+	free(trans);
+}
+
+t_external_def *t_external_def_init0(t_func_def * func)
+{
+	t_external_def *def = malloc(sizeof(t_external_def));
+
+	def->func = func;
+	def->type = 0;
+
+	return def;
+}
+
+t_external_def *t_external_def_init1(t_expr * decl)
+{
+	t_external_def *def = malloc(sizeof(t_external_def));
+
+	def->declaration = decl;
+	def->type = 1;
+
+	return def;
+}
+
+void t_external_def_destroy(t_external_def * def)
+{
+	if (!def)
+		return;
+
+	if (def->type == 0) {
+		t_func_def_destroy(def->func);
+	} else if (def->type == 1) {
+		t_expr_destroy(def->declaration);
+	}
+
+	free(def);
+}
+
 t_func_def *t_func_def_init(t_decl_spec * decl_spec, t_decl_list * dlist,
 			    t_block * block)
 {

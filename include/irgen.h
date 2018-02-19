@@ -12,6 +12,7 @@
  * Temporary variables, then generates a linear list of three address
  * code in the quadruple form
  * */
+void unit_gen(quad_gen * gen, t_trans_unit * unit);
 void func_gen(quad_gen * gen, t_func_def * func);
 void block_gen(quad_gen * gen, t_block * block);
 void stmt_gen(quad_gen * gen, t_stmt * stmt);

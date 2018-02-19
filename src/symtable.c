@@ -171,7 +171,12 @@ void symbol_table_destroy(symbol_table * symt)
 	if (!symt)
 		return;
 
-	printf("Dumping Symbol Table\n");
+	for (int i = 0; i < symt->num_children; i++) {
+		symbol_table_destroy(symt->children[i]);
+	}
+	free(symt->children);
+
+	printf("Variables\n");
 	for (int i = 0; i < symt->num_buckets; i++) {
 		symbol *head = symt->symbols[i];
 		while (head) {
@@ -184,6 +189,7 @@ void symbol_table_destroy(symbol_table * symt)
 			head = n;
 		}
 	}
+	printf("vEnd\n");
 
 	free(symt->symbols);
 	free(symt);
