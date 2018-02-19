@@ -36,6 +36,45 @@ symbol *symbol_find(symbol * head, long hash)
 	return NULL;
 }
 
+symbol_table *symbol_table_push(symbol_table *table)
+{
+	symbol_table *child = symbol_table_init(table);
+	symbol_table_add(table, child);
+	return child;
+}
+
+symbol_table *symbol_table_pop(symbol_table *table)
+{
+	return table->parent ? table->parent : table;
+}
+
+symbol_table *symbol_table_next(symbol_table *table)
+{
+	assert(table->block_iter < table->num_children);
+	return table->children[table->block_iter++];
+}
+
+void symbol_table_reset(symbol_table *table)
+{
+	if (!table) return;
+	table->block_iter = 0;
+	for (int i = 0; i < table->num_children; i++) {
+		symbol_table_reset(table->children[i]);
+	}
+}
+
+void symbol_table_add(symbol_table *parent, symbol_table *child)
+{
+	parent->num_children++;
+	if (parent->num_children == 1) {
+		parent->children = malloc(sizeof(symbol_table*));
+	} else {
+		parent->children = realloc(parent->children, sizeof(symbol_table*) * parent->num_children);
+	}
+
+	parent->children[parent->num_children-1] = child;
+}
+
 symbol_table *symbol_table_init(symbol_table * parent)
 {
 	symbol_table *symt = malloc(sizeof(symbol_table));
@@ -44,6 +83,7 @@ symbol_table *symbol_table_init(symbol_table * parent)
 	symt->parent = parent;
 	symt->children = NULL;
 	symt->num_children = 0;
+	symt->block_iter = 0;
 
 	for (int i = 0; i < symt->num_buckets; i++) {
 		symt->symbols[i] = NULL;
@@ -115,7 +155,11 @@ symbol *symbol_table_lookup(symbol_table * symt, char *ident)
 {
 	long hash = symbol_table_hash(ident);
 
-	return symbol_find(symt->symbols[hash % symt->num_buckets], hash);
+	symbol *sym = symbol_find(symt->symbols[hash % symt->num_buckets], hash);
+	if (!sym && symt->parent) {
+		sym = symbol_table_lookup(symt->parent, ident);
+	}
+	return sym;
 }
 
 void symbol_table_destroy(symbol_table * symt)

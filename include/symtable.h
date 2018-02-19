@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "ast.h"
 
 //Temporarily pointers are hardcoded as 4 bytes
@@ -44,6 +45,11 @@ typedef struct symbol_table {
 	//Each code block gets a new symbol table for scope.
 	struct symbol_table **children, *parent;
 	int num_children;
+
+	//To later retrieve the correct symbol table for the right block
+	//This iterator is used. Assumes the typecheck, and later
+	//traversal are both in the same order
+	int block_iter;
 } symbol_table;
 
 /*Allocates and Initializes a symbol table with 100 buckets*/
@@ -51,6 +57,12 @@ symbol_table *symbol_table_init();
 /* Returns Symbol Holding Information*/
 symbol *symbol_init(char *ident, type_info type, long hash);
 
+symbol_table *symbol_table_push(symbol_table *symt);
+symbol_table *symbol_table_pop(symbol_table *symt);
+
+void symbol_table_add(symbol_table *parent, symbol_table *child);
+void symbol_table_reset(symbol_table *table);
+symbol_table *symbol_table_next(symbol_table *parent);
 /*Inserts a symbol into the symtable. If a symbol already exists,
  * function will return one, because it probably means there are
  * duplicate or conflicting declarations*/

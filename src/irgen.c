@@ -1,5 +1,14 @@
 #include "../include/irgen.h"
 
+void func_gen(quad_gen *gen, t_func_def *func)
+{
+	if (!func) return;
+
+	gen->symt = symbol_table_next(gen->symt);
+	block_gen(gen, func->block);
+	gen->symt = symbol_table_pop(gen->symt);
+}
+
 void block_gen(quad_gen * gen, t_block * block)
 {
 	if (!block)
@@ -18,7 +27,9 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 
 	switch (stmt->type) {
 	case 0:		//compound statements
+		gen->symt = symbol_table_next(gen->symt);
 		block_gen(gen, stmt->block);
+		gen->symt = symbol_table_pop(gen->symt);
 		break;
 	case 2:		//expression statements
 		expr_gen(gen, stmt->expression);
@@ -43,7 +54,9 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 		expr_gen(gen, stmt->cstmt->condition);
 		//quad_from_cond(gen, stmt->cstmt->condition);
 		quad_gen_add(gen, block_start);
+		gen->symt = symbol_table_next(gen->symt);
 		block_gen(gen, stmt->cstmt->block);
+		gen->symt = symbol_table_pop(gen->symt);
 		if (else_stmt) {
 			quadruple *jquad =
 			    quad_jump(quad_jmp, else_stmt->label);
@@ -57,7 +70,9 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			backpatch(stmt->cstmt->condition->truelist,
 				  block_start->label);
 		if (else_stmt) {
+			gen->symt = symbol_table_next(gen->symt);
 			block_gen(gen, stmt->cstmt->otherwise);
+			gen->symt = symbol_table_pop(gen->symt);
 			quad_gen_add(gen, else_stmt);
 		}
 		quadruple *else_start = NULL;
@@ -69,6 +84,7 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			    quad_label(quad_gen_request_label(gen));
 			quadruple *comp_start =
 			    quad_label(quad_gen_request_label(gen));
+			gen->symt = symbol_table_next(gen->symt);
 			expr_gen(gen, stmt->itstmt->init);
 			quad_gen_add(gen,
 				     quad_jump(quad_jmp, comp_start->label));
@@ -77,6 +93,7 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			expr_gen(gen, stmt->itstmt->iter);
 			quad_gen_add(gen, comp_start);
 			expr_gen(gen, stmt->itstmt->cond);
+			gen->symt = symbol_table_pop(gen->symt);
 			quadruple *end =
 			    quad_label(quad_gen_request_label(gen));
 			quad_gen_add(gen, end);
@@ -86,7 +103,27 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
 				backpatch(stmt->itstmt->cond->falselist,
 					  end->label);
-		}
+		} else {
+	            quadruple *block_start = quad_label(quad_gen_request_label(gen));
+	            quadruple *comp_start = quad_label(quad_gen_request_label(gen));
+
+	            if (!stmt->itstmt->first) {
+	                quad_gen_add(gen, quad_jump(quad_jmp, comp_start->label));
+	            }
+	            quad_gen_add(gen, block_start);
+	            gen->symt = symbol_table_next(gen->symt);
+		    block_gen(gen, stmt->itstmt->block);
+	            quad_gen_add(gen, comp_start);
+	            expr_gen(gen, stmt->itstmt->cond);
+		    gen->symt = symbol_table_pop(gen->symt);
+	            quadruple *end = quad_label(quad_gen_request_label(gen));
+	            quad_gen_add(gen, end);
+
+	            if (stmt->itstmt->cond && stmt->itstmt->cond->truelist)
+	                backpatch(stmt->itstmt->cond->truelist, block_start->label);
+	            if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
+        	        backpatch(stmt->itstmt->cond->falselist, end->label);
+        }
 		break;
 	default:
 		break;		//Dont add declarations to quads

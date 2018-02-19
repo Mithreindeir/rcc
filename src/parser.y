@@ -5,7 +5,7 @@
 
 	#define YYERROR_VERBOSE
 
-	t_block *main_block;
+	t_func_def *main_func;
 	symbol_table *global_table;
 
 	extern int yylex();
@@ -21,6 +21,8 @@
 	t_decl_spec *decl_spec;
 	t_conditional_stmt * cstmt;
 	t_iterative_stmt *itstmt;
+	t_func_def *func;
+	t_decl_list *dlist;
 	t_block *block;
 	t_stmt *statement;
 	char *string;
@@ -53,6 +55,8 @@
 %type <statement> stmt
 %type <cstmt> cond_stmt
 %type <itstmt> iter_stmt
+%type <dlist> decl_list
+%type <func> func_def
 
 /*Operator Precedence To Resolve Conflicts*/
 %left T_ASN
@@ -68,7 +72,19 @@
 %%
 
 program
-	: stmt_list { main_block = $1; }
+	: func_def { main_func = $1; }
+	//: stmt_list { main_block = $1; }
+	;
+
+decl_list
+	: %empty { $$ = 0; } 
+	| declaration { $$ = t_decl_list_init($1); }
+	| decl_list T_COMMA  declaration { $$ = t_decl_list_add($1, $3); }
+	;
+
+func_def
+	: decl_spec T_LPAREN decl_list T_RPAREN cmpd_stmt { $$ = t_func_def_init($1, $3, $5); }
+	;
 
 stmt_list
 	: stmt { $$ = t_block_init($1); }
@@ -146,13 +162,7 @@ asn_op
 	;
 
 primary
-	: ident
-		{
-			if (!symbol_table_lookup(global_table, $1->ident)) {
-				yyerror("Symbol Not Defined\n");
-			}
-			$$ = t_expr_init0($1);
-		}
+	: ident { $$ = t_expr_init0($1); }
 	| const { $$ = t_expr_init1($1); }
 	| T_LPAREN or_expr T_RPAREN { $$ = $2; }
 	;
@@ -233,13 +243,7 @@ type_spec
 	;
 
 decl_spec
-	: type_spec declr
-		{
-			$$ = t_decl_spec_init($1, $2);
-			if (symbol_table_insert_decl_spec(global_table, $$)) {
-				yyerror("Redeclaration\n");
-			}
-		}
+	: type_spec declr { $$ = t_decl_spec_init($1, $2); }
 	;
 
 declr
@@ -254,7 +258,7 @@ pointer
 dir_declr
 	: ident { $$ = t_dir_declr_init0($1); }
 	| T_LPAREN declr T_RPAREN { $$ = t_dir_declr_init1($2); }
-	| dir_declr T_LPAREN T_RPAREN { $$ = $1;}
+	//| dir_declr T_LPAREN T_RPAREN { $$ = $1;}
 	;
 
 %%

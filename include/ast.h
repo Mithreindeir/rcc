@@ -67,6 +67,7 @@ typedef struct t_stmt t_stmt;
 typedef struct t_param_list t_param_list;
 typedef struct t_conditional_stmt t_conditional_stmt;
 typedef struct t_iterative_stmt t_iterative_stmt;
+typedef struct t_decl_list t_decl_list;
 
 struct t_call {
 	t_ident *ident;
@@ -78,16 +79,23 @@ t_call *t_call_init(t_ident * ident, t_expr ** expr_l, int num_expr);
 
 struct t_func_def {
 	t_decl_spec *decl_spec;
-	t_param_list *parameter;
+	t_decl_spec **decl_list;
+	int num_param;
 	t_block *block;
 };
 
-struct t_param_list {
-	t_decl_spec *params;
-	int num_params;
+t_func_def *t_func_def_init(t_decl_spec *decl_spec, t_decl_list *dlist, t_block *block);
+void t_func_def_destroy(t_func_def *func);
+
+struct t_decl_list {
+	t_expr ** decls;
+	int num_decls;
 };
 
-t_call *t_call_init(t_ident * ident, t_expr ** expr_l, int num_expr);
+t_decl_list *t_decl_list_init(t_expr * decl);
+t_decl_list *t_decl_list_add(t_decl_list * dlist, t_expr * decl);
+void t_decl_list_destroy(t_decl_list *dlist);
+
 
 struct t_conditional_stmt {
 	t_expr *condition;
