@@ -244,6 +244,7 @@ t_expr *t_expr_init0(t_ident * ident)
 	expr->type_name = 0;
 	expr->truelist = NULL;
 	expr->falselist = NULL;
+	expr->next = NULL;
 
 	return expr;
 }
@@ -259,6 +260,7 @@ t_expr *t_expr_init1(t_numeric * num)
 	expr->type_name = 0;
 	expr->truelist = NULL;
 	expr->falselist = NULL;
+	expr->next = NULL;
 
 	return expr;
 }
@@ -274,6 +276,7 @@ t_expr *t_expr_init2(t_expr * lhs, int op, t_expr * rhs)
 	expr->type_name = 0;
 	expr->truelist = NULL;
 	expr->falselist = NULL;
+	expr->next = NULL;
 
 	return expr;
 }
@@ -289,6 +292,7 @@ t_expr *t_expr_init3(t_decl_spec * decl_spec)
 	expr->type_name = 0;
 	expr->truelist = NULL;
 	expr->falselist = NULL;
+	expr->next = NULL;
 
 	return expr;
 }
@@ -304,6 +308,7 @@ t_expr *t_expr_init4(t_expr * term, int oper)
 	expr->type_name = 0;
 	expr->truelist = NULL;
 	expr->falselist = NULL;
+	expr->next = NULL;
 
 	return expr;
 }
@@ -319,8 +324,19 @@ t_expr *t_expr_init5(char *string)
 	expr->truelist = NULL;
 	expr->falselist = NULL;
 	expr->cstring = string;
+	expr->next = NULL;
 
 	return expr;
+}
+
+t_expr *t_expr_add(t_expr * old, t_expr * next)
+{
+	t_expr *cur = old;
+	while (cur && cur->next)
+		cur = cur->next;
+	if (cur)
+		cur->next = next;
+	return old;
 }
 
 t_numeric *t_numeric_init0(char *cint)
@@ -784,6 +800,8 @@ void t_expr_destroy(t_expr * expr)
 {
 	if (!expr)
 		return;
+	if (expr->next)
+		t_expr_destroy(expr->next);
 
 	if (expr->type == 0)
 		t_ident_destroy(expr->ident);

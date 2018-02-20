@@ -179,6 +179,7 @@ struct t_expr {
 		t_unop *unop;
 		char *cstring;
 	};
+	struct t_expr *next;
 	int type;
 	//For Code Generation
 	void *truelist, *falselist;
@@ -193,6 +194,7 @@ t_expr *t_expr_init2(t_expr * lhs, int op, t_expr * rhs);
 t_expr *t_expr_init3(t_decl_spec * decl_spec);
 t_expr *t_expr_init4(t_expr * term, int oper);
 t_expr *t_expr_init5(char *string);
+t_expr *t_expr_add(t_expr * old, t_expr * next);
 void t_expr_destroy(t_expr * expr);
 
 struct t_numeric {

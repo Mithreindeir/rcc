@@ -89,8 +89,8 @@ external_def
 
 decl_list
 	: %empty { $$ = 0; } 
-	| declaration { $$ = t_decl_list_init($1); }
-	| decl_list T_COMMA  declaration { $$ = t_decl_list_add($1, $3); }
+	| decl_spec { $$ = t_decl_list_init(t_expr_init3($1)); }
+	| decl_list T_COMMA decl_spec { $$ = t_decl_list_add($1, t_expr_init3($3)); }
 	;
 
 func_def
@@ -123,8 +123,8 @@ jmp_stmt
 	;
 
 declaration
-	: decl_spec { $$ = t_expr_init3($1); }
-	| decl_spec T_ASN asn_expr T_SEMIC { $$ = t_expr_init2(t_expr_init3($1), oper_assign, $3); }
+	: decl_spec T_SEMIC { $$ = t_expr_init3($1); }
+	| decl_spec T_ASN expr T_SEMIC { $$ = t_expr_init2(t_expr_init3($1), oper_assign, $3); }
 	;
 
 iter_stmt
@@ -135,8 +135,8 @@ iter_stmt
 	;
 
 cond_stmt
-	: T_IF T_LPAREN asn_expr T_RPAREN stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), NULL); }
-	| T_IF T_LPAREN asn_expr T_RPAREN stmt T_ELSE stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), t_block_init($7)); }
+	: T_IF T_LPAREN expr T_RPAREN stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), NULL); }
+	| T_IF T_LPAREN expr T_RPAREN stmt T_ELSE stmt { $$ = t_conditional_stmt_init($3, t_block_init($5), t_block_init($7)); }
 	;
 
 expr_stmt
@@ -147,11 +147,11 @@ expr_stmt
 
 expr
 	: asn_expr { $$=$1; }
-	| expr T_COMMA asn_expr
+	| expr T_COMMA asn_expr { t_expr_add($1, $3); $$ = $1; }
 	;
 
 asn_expr
-	: %empty { $$ = 0; }
+	: %empty {$$ = 0; }
 	| or_expr
 	| unary asn_op asn_expr { $$ = t_expr_init2($1, $2, $3); }
 	;
@@ -184,7 +184,7 @@ primary
 	: ident { $$ = t_expr_init0($1); }
 	| const { $$ = t_expr_init1($1); }
 	| T_CSTR { $$ = t_expr_init5($1); }
-	| T_LPAREN or_expr T_RPAREN { $$ = $2; }
+	| T_LPAREN expr T_RPAREN { $$ = $2; }
 	;
 
 ident

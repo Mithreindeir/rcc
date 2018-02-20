@@ -132,8 +132,8 @@ void t_expr_check(symbol_table * symt, t_expr * expr)
 		//Both children should have the same typeinfo so use the left
 		expr->num_ptr =
 		    expr->binop->lhs->num_ptr >
-		    expr->binop->rhs->num_ptr ? expr->binop->
-		    lhs->num_ptr : expr->binop->rhs->num_ptr;
+		    expr->binop->rhs->num_ptr ? expr->binop->lhs->
+		    num_ptr : expr->binop->rhs->num_ptr;
 		expr->type_name = expr->binop->lhs->type_name;
 
 	} else if (expr->type == 3) {
@@ -183,6 +183,9 @@ void t_expr_set_typeinfo(symbol_table * symt, t_expr * leaf)
 			exit(1);
 		}
 		//print_expr_type(leaf);
+	} else if (leaf->type == 5) {
+		leaf->type_name = type_signed_char;
+		leaf->num_ptr = 1;
 	}
 }
 

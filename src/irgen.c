@@ -55,10 +55,8 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 		break;
 	case 2:		//expression statements
 		expr_gen(gen, stmt->expression);
-		stmt->truelist =
-		    merge(stmt->truelist, stmt->expression->truelist);
-		stmt->falselist =
-		    merge(stmt->falselist, stmt->expression->falselist);
+		stmt->truelist = merge(stmt->truelist, NULL);
+		stmt->falselist = merge(stmt->falselist, NULL);
 		break;
 	case 3:		//if/else statements
 		;
@@ -186,7 +184,6 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 	case 5:
 		//continue
 		if (stmt->jump->type == 0) {
-			printf("asdiasj\n");
 			quadruple *continuej = quad_jump(quad_jmp, 0);
 			quad_gen_add(gen, continuej);
 			stmt->truelist = make_list(continuej);
@@ -243,7 +240,15 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 				quad_from_unop(gen, expr);
 		}
 
-		expr->virt_reg = quad_gen_last_temp(gen);
+		//If there is a comma, discard the current expression
+		if (!expr->next)
+			expr->virt_reg = quad_gen_last_temp(gen);
+	}
+
+	if (expr->next) {
+		expr_gen(gen, expr->next);
+		expr->truelist = merge(expr->truelist, expr->next->truelist);
+		expr->falselist = merge(expr->falselist, expr->next->falselist);
 	}
 }
 
@@ -294,6 +299,9 @@ quad_op quad_map_operation(int oper)
 quad_operand *quad_opr_from_expr(quad_gen * gen, t_expr * expr)
 {
 	quad_operand *opr = quad_operand_init();
+	while (expr->next)
+		expr = expr->next;
+
 	if (expr->virt_reg != -1) {
 		opr->type = Q_TEMP;
 		opr->temp = expr->virt_reg;
