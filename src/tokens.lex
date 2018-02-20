@@ -10,7 +10,9 @@
 %}
 
 %%
-[ \t\n]			;
+[ \t\n]         ;
+\'.{0,1}\'          SAVE_TOKEN;     return T_CLIT;
+\".*\"  SAVE_TOKEN;     return T_CSTR;
 [0-9]+			SAVE_TOKEN; return T_CINT;
 [0-9]+.[0-9]+	SAVE_TOKEN; return T_CDOUBLE;
 "if"			return TOKEN(T_IF);
@@ -18,6 +20,9 @@
 "for"			return TOKEN(T_FOR);
 "while"			return TOKEN(T_WHILE);
 "do"			return TOKEN(T_DO);
+"break"         return TOKEN(T_BREAK);
+"continue"      return TOKEN(T_CONTINUE);
+"return"        return TOKEN(T_RETURN);
 "void"			return TOKEN(T_VOID);
 "char"			return TOKEN(T_CHAR);
 "short"			return TOKEN(T_SHORT);
@@ -37,7 +42,7 @@
 "="			return TOKEN(T_ASN);
 "=="			return TOKEN(T_EQ);
 "++"			return TOKEN(T_INC);
-"--"			return TOKEN(T_DEC); 
+"--"			return TOKEN(T_DEC);
 "!="			return TOKEN(T_NEQ);
 "<"			return TOKEN(T_LT);
 "<="			return TOKEN(T_LTE);

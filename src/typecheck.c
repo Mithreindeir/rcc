@@ -132,8 +132,8 @@ void t_expr_check(symbol_table * symt, t_expr * expr)
 		//Both children should have the same typeinfo so use the left
 		expr->num_ptr =
 		    expr->binop->lhs->num_ptr >
-		    expr->binop->rhs->num_ptr ? expr->binop->lhs->
-		    num_ptr : expr->binop->rhs->num_ptr;
+		    expr->binop->rhs->num_ptr ? expr->binop->
+		    lhs->num_ptr : expr->binop->rhs->num_ptr;
 		expr->type_name = expr->binop->lhs->type_name;
 
 	} else if (expr->type == 3) {

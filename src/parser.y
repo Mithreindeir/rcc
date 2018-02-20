@@ -26,6 +26,7 @@
 	t_block *block;
 	t_external_def *externdef;
 	t_stmt *statement;
+	t_jump *jmp;
 	char *string;
 	int token;
 	int type;
@@ -33,7 +34,7 @@
 	int ptr;
 }
 
-%token <string> T_IDENT T_CINT T_CDOUBLE
+%token <string> T_IDENT T_CINT T_CDOUBLE T_CLIT T_CSTR
 %token <token> T_ASN T_EQ T_NEQ T_LT T_LTE T_LPAREN
 %token <token> T_RPAREN T_LCBRK T_RCBRK T_DOT T_COMMA
 %token <token> T_MUL T_DIV T_PLUS T_SUB T_PTRMEM
@@ -42,6 +43,7 @@
 %token <token> T_SIGNED T_UNSIGNED T_FLOAT T_DOUBLE
 %token <token> T_IF T_ELSE T_FOR T_WHILE T_DO
 %token <token> T_BAND T_AND T_BOR T_OR T_XOR
+%token <token> T_BREAK T_CONTINUE T_RETURN
 
 %type <cnumeric> const
 %type <expr> primary expr eq_expr add_expr mul_expr asn_expr declaration unary postfix expr_stmt rel_expr or_expr and_expr xor_expr bor_expr band_expr
@@ -59,6 +61,7 @@
 %type <dlist> decl_list
 %type <func> func_def
 %type <externdef> external_def
+%type <jmp> jmp_stmt
 
 /*Operator Precedence To Resolve Conflicts*/
 %left T_ASN
@@ -109,6 +112,14 @@ stmt
 	| expr_stmt { $$ = t_stmt_init2($1); }
 	| cond_stmt { $$ = t_stmt_init3($1); }
 	| iter_stmt { $$ = t_stmt_init4($1); }
+	| jmp_stmt  { $$ = t_stmt_init5($1); }
+	;
+
+jmp_stmt
+	: T_CONTINUE T_SEMIC { $$ = t_jump_init0(); }
+	| T_BREAK T_SEMIC { $$ = t_jump_init1(); }
+	| T_RETURN T_SEMIC { $$ = t_jump_init2(NULL); }
+	| T_RETURN expr T_SEMIC { $$ = t_jump_init2($2); }
 	;
 
 declaration
@@ -172,6 +183,7 @@ asn_op
 primary
 	: ident { $$ = t_expr_init0($1); }
 	| const { $$ = t_expr_init1($1); }
+	| T_CSTR { $$ = t_expr_init5($1); }
 	| T_LPAREN or_expr T_RPAREN { $$ = $2; }
 	;
 
@@ -182,6 +194,7 @@ ident
 const
 	: T_CINT { $$ = t_numeric_init0($1); }
 	| T_CDOUBLE { $$ = t_numeric_init1($1); }
+	| T_CLIT { $$ = t_numeric_init2($1[1]); }
 	;
 
 band_expr

@@ -31,6 +31,10 @@ void block_gen(quad_gen * gen, t_block * block)
 
 	for (int i = (block->num_statements - 1); i >= 0; i--) {
 		stmt_gen(gen, block->statements[i]);
+		block->truelist =
+		    merge(block->truelist, block->statements[i]->truelist);
+		block->falselist =
+		    merge(block->falselist, block->statements[i]->falselist);
 	}
 
 }
@@ -44,10 +48,17 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 	case 0:		//compound statements
 		gen->symt = symbol_table_next(gen->symt);
 		block_gen(gen, stmt->block);
+		stmt->truelist = merge(stmt->truelist, stmt->block->truelist);
+		stmt->falselist =
+		    merge(stmt->falselist, stmt->block->falselist);
 		gen->symt = symbol_table_pop(gen->symt);
 		break;
 	case 2:		//expression statements
 		expr_gen(gen, stmt->expression);
+		stmt->truelist =
+		    merge(stmt->truelist, stmt->expression->truelist);
+		stmt->falselist =
+		    merge(stmt->falselist, stmt->expression->falselist);
 		break;
 	case 3:		//if/else statements
 		;
@@ -58,14 +69,7 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 		if (stmt->cstmt->otherwise)
 			else_stmt = quad_label(quad_gen_request_label(gen));
 
-		//turn "if (1)" into "if (1!=0)"
-		if (stmt->cstmt->condition->type != 2
-		    && stmt->cstmt->condition->type != 4) {
-			t_expr *expr =
-			    t_expr_init2(stmt->cstmt->condition, oper_notequal,
-					 t_expr_init1(t_numeric_init0("0")));
-			stmt->cstmt->condition = expr;
-		}
+		stmt->cstmt->condition = make_condition(stmt->cstmt->condition);
 		expr_gen(gen, stmt->cstmt->condition);
 		//quad_from_cond(gen, stmt->cstmt->condition);
 		quad_gen_add(gen, block_start);
@@ -91,22 +95,36 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			quad_gen_add(gen, else_stmt);
 		}
 		quadruple *else_start = NULL;
-
+		stmt->truelist =
+		    merge(stmt->truelist, stmt->cstmt->block->truelist);
+		stmt->falselist =
+		    merge(stmt->falselist, stmt->cstmt->block->falselist);
+		if (else_stmt) {
+			stmt->truelist =
+			    merge(stmt->truelist,
+				  stmt->cstmt->otherwise->truelist);
+			stmt->falselist =
+			    merge(stmt->falselist,
+				  stmt->cstmt->otherwise->falselist);
+		}
 		break;
 	case 4:		//for/while loops
 		if (stmt->itstmt->type == 0) {
-			quadruple *block_start =
-			    quad_label(quad_gen_request_label(gen));
-			quadruple *comp_start =
-			    quad_label(quad_gen_request_label(gen));
+			quadruple *block_start, *comp_start, *iter_start;
+
+			block_start = quad_label(quad_gen_request_label(gen));
+			comp_start = quad_label(quad_gen_request_label(gen));
+			iter_start = quad_label(quad_gen_request_label(gen));
 			gen->symt = symbol_table_next(gen->symt);
 			expr_gen(gen, stmt->itstmt->init);
 			quad_gen_add(gen,
 				     quad_jump(quad_jmp, comp_start->label));
 			quad_gen_add(gen, block_start);
 			block_gen(gen, stmt->itstmt->block);
+			quad_gen_add(gen, iter_start);
 			expr_gen(gen, stmt->itstmt->iter);
 			quad_gen_add(gen, comp_start);
+			stmt->itstmt->cond = make_condition(stmt->itstmt->cond);
 			expr_gen(gen, stmt->itstmt->cond);
 			gen->symt = symbol_table_pop(gen->symt);
 			quadruple *end =
@@ -118,11 +136,19 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
 				backpatch(stmt->itstmt->cond->falselist,
 					  end->label);
+
+			if (stmt->itstmt->block
+			    && stmt->itstmt->block->truelist)
+				backpatch(stmt->itstmt->block->truelist,
+					  iter_start->label);
+			if (stmt->itstmt->block
+			    && stmt->itstmt->block->falselist)
+				backpatch(stmt->itstmt->block->falselist,
+					  end->label);
 		} else {
-			quadruple *block_start =
-			    quad_label(quad_gen_request_label(gen));
-			quadruple *comp_start =
-			    quad_label(quad_gen_request_label(gen));
+			quadruple *block_start, *comp_start;
+			block_start = quad_label(quad_gen_request_label(gen));
+			comp_start = quad_label(quad_gen_request_label(gen));
 
 			if (!stmt->itstmt->first) {
 				quad_gen_add(gen,
@@ -133,6 +159,7 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			gen->symt = symbol_table_next(gen->symt);
 			block_gen(gen, stmt->itstmt->block);
 			quad_gen_add(gen, comp_start);
+			stmt->itstmt->cond = make_condition(stmt->itstmt->cond);
 			expr_gen(gen, stmt->itstmt->cond);
 			gen->symt = symbol_table_pop(gen->symt);
 			quadruple *end =
@@ -145,6 +172,29 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
 				backpatch(stmt->itstmt->cond->falselist,
 					  end->label);
+
+			if (stmt->itstmt->block
+			    && stmt->itstmt->block->truelist)
+				backpatch(stmt->itstmt->block->truelist,
+					  block_start->label);
+			if (stmt->itstmt->block
+			    && stmt->itstmt->block->falselist)
+				backpatch(stmt->itstmt->block->falselist,
+					  end->label);
+		}
+		break;
+	case 5:
+		//continue
+		if (stmt->jump->type == 0) {
+			printf("asdiasj\n");
+			quadruple *continuej = quad_jump(quad_jmp, 0);
+			quad_gen_add(gen, continuej);
+			stmt->truelist = make_list(continuej);
+		} else if (stmt->jump->type == 1) {
+
+			quadruple *breakj = quad_jump(quad_jmp, 0);
+			quad_gen_add(gen, breakj);
+			stmt->falselist = make_list(breakj);
 		}
 		break;
 	default:
@@ -258,6 +308,9 @@ quad_operand *quad_opr_from_expr(quad_gen * gen, t_expr * expr)
 		opr->sym =
 		    symbol_table_lookup(gen->symt,
 					get_decl_name(expr->decl_spec));
+	} else if (expr->type == 5) {
+		opr->type = Q_CSTR;
+		opr->cstr = expr->cstring;
 	} else if (expr->type == 4 && expr->unop->op == oper_deref) {
 		opr->indirect = 1;
 		if (expr->unop->term->type == 0) {
@@ -301,14 +354,16 @@ quad_operand *quad_new_temp(quad_gen * gen)
 	return oper;
 }
 
-void quad_from_cond(quad_gen * gen, t_expr * expr)
+t_expr *make_condition(t_expr * expr)
 {
-	quadruple *quad = NULL;
-	quad_operand *cond = quad_opr_from_expr(gen, expr);
+	t_expr *cond = expr;
+	if (expr->type != 2 && expr->type != 4) {
+		cond =
+		    t_expr_init2(expr, oper_notequal,
+				 t_expr_init1(t_numeric_init0("0")));
+	}
 
-	quad = quad_general(quad_jeq, NULL, cond, NULL);
-	expr->falselist = make_list(quad);
-	quad_gen_add(gen, quad);
+	return cond;
 }
 
 /*If one side is pointer, the other isn't a pointer, and operation

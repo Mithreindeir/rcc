@@ -5,7 +5,7 @@ Currently has naive output of a small subset of C to unoptimized three address c
 ```
 int test = 50 / (3 + 5) * 20;
 int abcd = test * test + (test / test);
-   
+
 if (test == abcd/10) {
 	int dcab = test * test;
 	abcd = dcab;
@@ -19,7 +19,7 @@ int result = test + abcd;
 Becomes:
 
 ```
-.L0:	
+.L0:
 	tmp0 := 3 + 5
 	tmp1 := 50 / tmp0
 	tmp2 := tmp1 * 20
@@ -35,10 +35,10 @@ Becomes:
 	dcab = tmp8
 	abcd = dcab
 	goto .L2
-.L1:	
+.L1:
 	tmp9 := test / 2
 	abcd = tmp9
-.L2:	
+.L2:
 	tmp10 := test + abcd
 	result = tmp10
 ```

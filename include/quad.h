@@ -44,7 +44,8 @@ typedef enum quad_operand_t {
 	Q_NOTYPE,
 	Q_TEMP,
 	Q_SYM,
-	Q_CONST
+	Q_CONST,
+	Q_CSTR,
 } quad_operand_t;
 
 typedef struct quad_operand {
@@ -52,6 +53,7 @@ typedef struct quad_operand {
 		int temp;
 		symbol *sym;
 		long constant;
+		char *cstr;
 	};
 	quad_operand_t type;
 	//Indirect of 0 = opr, 1 = *opr, 2 = &opr

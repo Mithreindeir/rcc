@@ -23,6 +23,6 @@ quad_operand *quad_opr_from_expr(quad_gen * gen, t_expr * expr);
 int quad_ptr_scale(quad_gen * gen, t_expr * expr);
 void quad_from_binop(quad_gen * gen, t_expr * expr);
 void quad_from_unop(quad_gen * gen, t_expr * expr);
-void quad_from_cond(quad_gen * gen, t_expr * expr);
+t_expr *make_condition(t_expr * expr);
 
 #endif

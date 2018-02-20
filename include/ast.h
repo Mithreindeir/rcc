@@ -70,6 +70,7 @@ typedef struct t_iterative_stmt t_iterative_stmt;
 typedef struct t_decl_list t_decl_list;
 typedef struct t_external_def t_external_def;
 typedef struct t_trans_unit t_trans_unit;
+typedef struct t_jump t_jump;
 
 struct t_trans_unit {
 	t_external_def **definitions;
@@ -176,6 +177,7 @@ struct t_expr {
 		t_binop *binop;
 		t_decl_spec *decl_spec;
 		t_unop *unop;
+		char *cstring;
 	};
 	int type;
 	//For Code Generation
@@ -190,6 +192,7 @@ t_expr *t_expr_init1(t_numeric * num);
 t_expr *t_expr_init2(t_expr * lhs, int op, t_expr * rhs);
 t_expr *t_expr_init3(t_decl_spec * decl_spec);
 t_expr *t_expr_init4(t_expr * term, int oper);
+t_expr *t_expr_init5(char *string);
 void t_expr_destroy(t_expr * expr);
 
 struct t_numeric {
@@ -203,6 +206,7 @@ struct t_numeric {
 t_numeric *t_numeric_init0(char *cint);
 t_numeric *t_numeric_init1(char *cdouble);
 t_numeric *t_numeric_init2(int cint);
+
 void t_numeric_destroy(t_numeric * num);
 
 struct t_decl_spec {
@@ -236,6 +240,7 @@ void t_dir_declr_destroy(t_dir_declr * ddecl);
 struct t_block {
 	t_stmt **statements;
 	int num_statements;
+	void *truelist, *falselist;
 };
 
 t_block *t_block_init(t_stmt * stmt);
@@ -250,8 +255,10 @@ struct t_stmt {
 		t_expr *expression;
 		t_conditional_stmt *cstmt;
 		t_iterative_stmt *itstmt;
+		t_jump *jump;
 	};
 	int type;
+	void *truelist, *falselist;
 };
 
 t_stmt *t_stmt_init0(t_block * block);
@@ -259,7 +266,21 @@ t_stmt *t_stmt_init1(t_decl_spec * declaration);
 t_stmt *t_stmt_init2(t_expr * expr);
 t_stmt *t_stmt_init3(t_conditional_stmt * cstmt);
 t_stmt *t_stmt_init4(t_iterative_stmt * itstmt);
+t_stmt *t_stmt_init5(t_jump * jump);
 void t_stmt_destroy(t_stmt * stmt);
+
+struct t_jump {
+	union {
+		t_expr *retval;
+	};
+	int type;
+};
+
+t_jump *t_jump_init0();
+t_jump *t_jump_init1();
+t_jump *t_jump_init2(t_expr * retval);
+
+void t_jump_destroy(t_jump * jump);
 
 /*Print Functions*/
 void t_block_print(t_block * block);

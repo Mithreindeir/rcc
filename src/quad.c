@@ -171,6 +171,8 @@ void quad_opr_print(quad_operand * opr)
 		printf("%s", opr->sym->ident);
 	else if (opr->type == Q_CONST)
 		printf("%ld", opr->constant);
+	else if (opr->type == Q_CSTR)
+		printf("%s", opr->cstr);
 }
 
 void quad_print(quadruple * quad)
@@ -340,6 +342,8 @@ quad_list *merge(quad_list * l1, quad_list * l2)
 		return l1;
 	if (l2 && !l1)
 		return l2;
+	if (!l2 && !l1)
+		return NULL;
 
 	int old_size = l1->num_quads;
 	l1->num_quads += l2->num_quads;

@@ -308,6 +308,21 @@ t_expr *t_expr_init4(t_expr * term, int oper)
 	return expr;
 }
 
+t_expr *t_expr_init5(char *string)
+{
+	t_expr *expr = malloc(sizeof(t_expr));
+
+	expr->type = 5;
+	expr->virt_reg = -1;
+	expr->num_ptr = 0;
+	expr->type_name = 0;
+	expr->truelist = NULL;
+	expr->falselist = NULL;
+	expr->cstring = string;
+
+	return expr;
+}
+
 t_numeric *t_numeric_init0(char *cint)
 {
 	t_numeric *n = malloc(sizeof(t_numeric));
@@ -384,6 +399,9 @@ t_block *t_block_init(t_stmt * stmt)
 
 	block->statements = NULL;
 	block->num_statements = 0;
+	block->truelist = NULL;
+	block->falselist = NULL;
+
 	if (stmt)
 		t_block_add(block, stmt);
 
@@ -427,6 +445,8 @@ t_stmt *t_stmt_init0(t_block * block)
 
 	statement->type = 0;
 	statement->block = block;
+	statement->truelist = NULL;
+	statement->falselist = NULL;
 
 	return statement;
 }
@@ -437,6 +457,8 @@ t_stmt *t_stmt_init1(t_decl_spec * declaration)
 
 	statement->type = 1;
 	statement->declaration = declaration;
+	statement->truelist = NULL;
+	statement->falselist = NULL;
 
 	return statement;
 }
@@ -447,6 +469,8 @@ t_stmt *t_stmt_init2(t_expr * expr)
 
 	statement->type = 2;
 	statement->expression = expr;
+	statement->truelist = NULL;
+	statement->falselist = NULL;
 
 	return statement;
 }
@@ -457,6 +481,8 @@ t_stmt *t_stmt_init3(t_conditional_stmt * cstmt)
 
 	statement->type = 3;
 	statement->cstmt = cstmt;
+	statement->truelist = NULL;
+	statement->falselist = NULL;
 
 	return statement;
 }
@@ -467,8 +493,61 @@ t_stmt *t_stmt_init4(t_iterative_stmt * itstmt)
 
 	statement->type = 4;
 	statement->itstmt = itstmt;
+	statement->truelist = NULL;
+	statement->falselist = NULL;
 
 	return statement;
+}
+
+t_stmt *t_stmt_init5(t_jump * jump)
+{
+	t_stmt *statement = malloc(sizeof(t_stmt));
+
+	statement->type = 5;
+	statement->jump = jump;
+	statement->truelist = NULL;
+	statement->falselist = NULL;
+
+	return statement;
+}
+
+t_jump *t_jump_init0()
+{
+	t_jump *jump = malloc(sizeof(t_jump));
+
+	jump->type = 0;
+
+	return jump;
+}
+
+t_jump *t_jump_init1()
+{
+	t_jump *jump = malloc(sizeof(t_jump));
+
+	jump->type = 1;
+
+	return jump;
+}
+
+t_jump *t_jump_init2(t_expr * retval)
+{
+	t_jump *jump = malloc(sizeof(t_jump));
+
+	jump->retval = retval;
+	jump->type = 2;
+
+	return jump;
+}
+
+void t_jump_destroy(t_jump * jump)
+{
+	if (!jump)
+		return;
+
+	if (jump->type == 2 && jump->retval)
+		t_expr_destroy(jump->retval);
+
+	free(jump);
 }
 
 /*Printing Functions*/
@@ -716,7 +795,8 @@ void t_expr_destroy(t_expr * expr)
 		t_decl_spec_destroy(expr->decl_spec);
 	else if (expr->type == 4)
 		t_unop_destroy(expr->unop);
-
+	else if (expr->type == 5)
+		free(expr->cstring);
 	free(expr);
 }
 
@@ -789,6 +869,8 @@ void t_stmt_destroy(t_stmt * stmt)
 		t_conditional_stmt_destroy(stmt->cstmt);
 	else if (stmt->type == 4)
 		t_iterative_stmt_destroy(stmt->itstmt);
+	else if (stmt->type == 5)
+		t_jump_destroy(stmt->jump);
 
 	free(stmt);
 }
