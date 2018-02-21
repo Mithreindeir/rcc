@@ -19,6 +19,7 @@ void func_gen(quad_gen * gen, t_func_def * func)
 	if (!func)
 		return;
 
+	quad_gen_add(gen, quad_nlabel(get_decl_name(func->decl_spec)));
 	gen->symt = symbol_table_next(gen->symt);
 	block_gen(gen, func->block);
 	gen->symt = symbol_table_pop(gen->symt);
@@ -215,9 +216,11 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 		return;
 
 	if (expr->type == 2) {
-		if (expr->binop->lhs->type == 2 || expr->binop->lhs->type == 4)
+		if (expr->binop->lhs->type == 2 || expr->binop->lhs->type == 4
+		    || expr->binop->lhs->type == 6)
 			expr_gen(gen, expr->binop->lhs);
-		if (expr->binop->rhs->type == 2 || expr->binop->rhs->type == 4)
+		if (expr->binop->rhs->type == 2 || expr->binop->rhs->type == 4
+		    || expr->binop->rhs->type == 6)
 			expr_gen(gen, expr->binop->rhs);
 
 		quad_resolve_bool(gen, expr);
@@ -225,7 +228,8 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 		if (!expr->next)
 			expr->virt_reg = quad_gen_last_temp(gen);
 	} else if (expr->type == 4) {
-		if (expr->unop->term->type == 2 || expr->unop->term->type == 4) {
+		if (expr->unop->term->type == 2 || expr->unop->term->type == 4
+		    || expr->unop->term->type == 6) {
 			expr_gen(gen, expr->unop->term);
 		}
 
@@ -234,6 +238,16 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 		//If there is a comma, discard the current expression
 		if (!expr->next)
 			expr->virt_reg = quad_gen_last_temp(gen);
+	} else if (expr->type == 6) {
+		for (int i = 0; i < expr->call->num_expr; i++) {
+			expr_gen(gen, expr->call->expr_list[i]);
+			quadruple *param = quad_init();
+			param->type = Q_PARAM;
+			param->result =
+			    quad_opr_from_expr(gen, expr->call->expr_list[i]);
+			quad_gen_add(gen, param);
+		}
+
 	}
 
 	if (expr->next) {
@@ -325,6 +339,11 @@ quad_op quad_map_operation(int oper)
 
 quad_operand *quad_opr_from_expr(quad_gen * gen, t_expr * expr)
 {
+	if (expr->type == 6) {
+		quad_operand *copr = quad_opr_from_expr(gen, expr->call->func);
+		copr->call = 1;
+		return copr;
+	}
 	quad_operand *opr = quad_operand_init();
 	while (expr->next)
 		expr = expr->next;

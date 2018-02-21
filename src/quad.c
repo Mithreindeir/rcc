@@ -6,6 +6,7 @@ quad_operand *quad_operand_init()
 
 	qopr->type = Q_NOTYPE;
 	qopr->indirect = 0;
+	qopr->call = 0;
 
 	return qopr;
 }
@@ -29,6 +30,7 @@ quadruple *quad_init()
 	quad->result = NULL;
 	quad->arg1 = NULL;
 	quad->arg2 = NULL;
+	quad->name = NULL;
 
 	return quad;
 }
@@ -97,6 +99,16 @@ quadruple *quad_label(int label)
 	quadruple *quad = quad_init();
 
 	quad->label = label;
+	quad->type = Q_LABEL;
+
+	return quad;
+}
+
+quadruple *quad_nlabel(char *name)
+{
+	quadruple *quad = quad_init();
+
+	quad->name = name;
 	quad->type = Q_LABEL;
 
 	return quad;
@@ -177,6 +189,9 @@ void quad_opr_print(quad_operand * opr)
 		printf("%ld", opr->constant);
 	else if (opr->type == Q_CSTR)
 		printf("%s", opr->cstr);
+
+	if (opr->call)
+		printf("()");
 }
 
 void quad_print(quadruple * quad)
@@ -190,12 +205,19 @@ void quad_print(quadruple * quad)
 		quad_opr_print(quad->arg2);
 		printf(" L%d", quad->label);
 	} else if (quad->type == Q_LABEL) {
-		printf("L%d", quad->label);
+		if (quad->name)
+			printf("\n%s:", quad->name);
+		else
+			printf("L%d", quad->label);
 	} else if (quad->type == Q_RET) {
 		printf("\t");
 		quad_operation_print(quad->operation);
 		printf(" ");
 		quad_opr_print(quad->arg1);
+	} else if (quad->type == Q_PARAM) {
+		printf("\t");
+		printf("param ");
+		quad_opr_print(quad->result);
 	} else {
 		printf("\t");
 		quad_opr_print(quad->result);

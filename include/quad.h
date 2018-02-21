@@ -48,6 +48,7 @@ typedef enum quad_operand_t {
 	Q_SYM,
 	Q_CONST,
 	Q_CSTR,
+	Q_CALL
 } quad_operand_t;
 
 typedef struct quad_operand {
@@ -60,6 +61,8 @@ typedef struct quad_operand {
 	quad_operand_t type;
 	//Indirect of 0 = opr, 1 = *opr, 2 = &opr
 	int indirect;
+	//If this operand contains a function
+	int call;
 } quad_operand;
 
 /*Quadruple IR structure*/
@@ -72,6 +75,7 @@ typedef struct quadruple {
 	quad_operand *arg2;
 
 	int label;
+	char *name;
 	//Holding index in quad array helps with backpatching
 	int idx;
 } quadruple;
@@ -94,6 +98,7 @@ void quad_destroy(quadruple * quad);
 quadruple *quad_general(quad_op op, quad_operand * result, quad_operand * arg1,
 			quad_operand * arg2);
 quadruple *quad_label(int label);
+quadruple *quad_nlabel(char *name);
 quadruple *quad_jump(quad_op op, int label);
 void quad_implicit_type(quadruple * quad);
 

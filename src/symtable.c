@@ -11,6 +11,10 @@ symbol *symbol_init(char *ident, type_info type, long hash)
 	sym->hash = hash;
 	sym->next = NULL;
 
+	sym->function = 0;
+	sym->num_args = 0;
+	sym->args = NULL;
+
 	return sym;
 }
 
@@ -107,7 +111,7 @@ long symbol_table_hash(char *ident)
 	return hash;
 }
 
-int symbol_table_insert(symbol_table * symt, char *ident, type_info type)
+symbol *symbol_table_insert(symbol_table * symt, char *ident, type_info type)
 {
 	long hash = symbol_table_hash(ident);
 	long idx = hash % symt->num_buckets;
@@ -116,14 +120,37 @@ int symbol_table_insert(symbol_table * symt, char *ident, type_info type)
 	if (!s) {
 		s = symbol_init(ident, type, hash);
 		symbol_apphend(&symt->symbols[hash % symt->num_buckets], s);
-		return 0;
+		return s;
 	}
-	return 1;
+	return NULL;
 }
 
-int symbol_table_insert_decl_spec(symbol_table * symt, t_decl_spec * decl)
+symbol *symbol_table_insert_function(symbol_table * symt, t_func_def * func)
+{
+	symbol *sfunc = symbol_table_insert_decl_spec(symt, func->decl_spec);
+	if (!sfunc)
+		return NULL;
+
+	sfunc->num_args = func->num_param;
+	sfunc->args = malloc(sizeof(type_info) * sfunc->num_args);
+
+	for (int i = 0; i < sfunc->num_args; i++) {
+		char *tmp = NULL;
+		sfunc->args[i] = decl_spec_type_info(func->decl_list[i], &tmp);
+	}
+	return sfunc;
+}
+
+symbol *symbol_table_insert_decl_spec(symbol_table * symt, t_decl_spec * decl)
 {
 	char *ident = NULL;
+	type_info typen = decl_spec_type_info(decl, &ident);
+
+	return symbol_table_insert(symt, ident, typen);
+}
+
+type_info decl_spec_type_info(t_decl_spec * decl, char **ident)
+{
 
 	type_info typen;
 	typen.type_name = decl->type_name;
@@ -145,13 +172,12 @@ int symbol_table_insert_decl_spec(symbol_table * symt, t_decl_spec * decl)
 				declor = ddecl->decl;
 				type = 1;
 			} else {
-				ident = ddecl->ident->ident;
+				*ident = ddecl->ident->ident;
 				break;
 			}
 		}
 	}
-
-	return symbol_table_insert(symt, ident, typen);
+	return typen;
 }
 
 symbol *symbol_table_lookup(symbol_table * symt, char *ident)

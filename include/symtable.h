@@ -29,6 +29,9 @@ typedef struct symbol {
 	long hash;
 	int scope;
 	int temp;
+	int function;
+	struct type_info *args;
+	int num_args;
 
 	struct symbol *next;
 } symbol;
@@ -66,10 +69,14 @@ symbol_table *symbol_table_next(symbol_table * parent);
 /*Inserts a symbol into the symtable. If a symbol already exists,
  * function will return one, because it probably means there are
  * duplicate or conflicting declarations*/
-int symbol_table_insert(symbol_table * symt, char *ident, type_info type);
+symbol *symbol_table_insert(symbol_table * symt, char *ident, type_info type);
+
+/*Generates type info from function def/prototype struct*/
+symbol *symbol_table_insert_function(symbol_table * symt, t_func_def * func);
 
 /*Automatically generates type info from AST decl_spec struct*/
-int symbol_table_insert_decl_spec(symbol_table * symt, t_decl_spec * decl);
+symbol *symbol_table_insert_decl_spec(symbol_table * symt, t_decl_spec * decl);
+type_info decl_spec_type_info(t_decl_spec * decl, char **ident);
 
 /* Returns symbol given identifier. Null if not present*/
 symbol *symbol_table_lookup(symbol_table * symt, char *ident);

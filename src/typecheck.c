@@ -18,7 +18,7 @@ void t_func_check(symbol_table * symt, t_func_def * func)
 	symt = symbol_table_push(symt);
 
 	for (int i = 0; i < func->num_param; i++) {
-		if (symbol_table_insert_decl_spec(symt, func->decl_list[i])) {
+		if (!symbol_table_insert_decl_spec(symt, func->decl_list[i])) {
 			printf("Redeclaration of %s\n",
 			       get_decl_name(func->decl_list[i]));
 			exit(1);
@@ -132,12 +132,12 @@ void t_expr_check(symbol_table * symt, t_expr * expr)
 		//Both children should have the same typeinfo so use the left
 		expr->num_ptr =
 		    expr->binop->lhs->num_ptr >
-		    expr->binop->rhs->num_ptr ? expr->binop->
-		    lhs->num_ptr : expr->binop->rhs->num_ptr;
+		    expr->binop->rhs->num_ptr ? expr->binop->lhs->
+		    num_ptr : expr->binop->rhs->num_ptr;
 		expr->type_name = expr->binop->lhs->type_name;
 
 	} else if (expr->type == 3) {
-		if (symbol_table_insert_decl_spec(symt, expr->decl_spec)) {
+		if (!symbol_table_insert_decl_spec(symt, expr->decl_spec)) {
 			printf("Redeclaration of %s\n",
 			       get_decl_name(expr->decl_spec));
 			exit(1);
@@ -155,6 +155,10 @@ void t_expr_check(symbol_table * symt, t_expr * expr)
 		else if (expr->unop->op == oper_deref)
 			expr->num_ptr--;
 		expr->type_name = expr->unop->term->type_name;
+	} else if (expr->type == 6) {
+		t_expr_check(symt, expr->call->func);
+		expr->type_name = expr->call->func->type_name;
+		expr->num_ptr = expr->call->func->num_ptr;
 	}
 }
 
