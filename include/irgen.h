@@ -24,5 +24,6 @@ int quad_ptr_scale(quad_gen * gen, t_expr * expr);
 void quad_from_binop(quad_gen * gen, t_expr * expr);
 void quad_from_unop(quad_gen * gen, t_expr * expr);
 t_expr *make_condition(t_expr * expr);
+void quad_resolve_bool(quad_gen * gen, t_expr * expr);
 
 #endif

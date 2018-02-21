@@ -21,7 +21,7 @@ void func_gen(quad_gen * gen, t_func_def * func)
 
 	gen->symt = symbol_table_next(gen->symt);
 	block_gen(gen, func->block);
-	gen->symt = symbol_table_pop(gen->symt);
+    gen->symt = symbol_table_pop(gen->symt);
 }
 
 void block_gen(quad_gen * gen, t_block * block)
@@ -69,7 +69,6 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 
 		stmt->cstmt->condition = make_condition(stmt->cstmt->condition);
 		expr_gen(gen, stmt->cstmt->condition);
-		//quad_from_cond(gen, stmt->cstmt->condition);
 		quad_gen_add(gen, block_start);
 		gen->symt = symbol_table_next(gen->symt);
 		block_gen(gen, stmt->cstmt->block);
@@ -83,7 +82,7 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 		if (stmt->cstmt->condition->falselist)
 			backpatch(stmt->cstmt->condition->falselist,
 				  block_end->label);
-		if (stmt->cstmt->condition->truelist)
+        if (stmt->cstmt->condition->truelist)
 			backpatch(stmt->cstmt->condition->truelist,
 				  block_start->label);
 		if (else_stmt) {
@@ -131,10 +130,9 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			if (stmt->itstmt->cond && stmt->itstmt->cond->truelist)
 				backpatch(stmt->itstmt->cond->truelist,
 					  block_start->label);
-			if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
+            if (stmt->itstmt->cond && stmt->itstmt->cond->falselist)
 				backpatch(stmt->itstmt->cond->falselist,
 					  end->label);
-
 			if (stmt->itstmt->block
 			    && stmt->itstmt->block->truelist)
 				backpatch(stmt->itstmt->block->truelist,
@@ -192,7 +190,14 @@ void stmt_gen(quad_gen * gen, t_stmt * stmt)
 			quadruple *breakj = quad_jump(quad_jmp, 0);
 			quad_gen_add(gen, breakj);
 			stmt->falselist = make_list(breakj);
-		}
+		} else if (stmt->jump->type == 2) {
+            quadruple * ret = quad_jump(quad_ret, 0);
+            if (stmt->jump->retval) {
+                expr_gen(gen, stmt->jump->retval);
+                ret->arg1 = quad_opr_from_expr(gen, stmt->jump->retval);
+            }
+            quad_gen_add(gen, ret);
+        }
 		break;
 	default:
 		break;		//Dont add declarations to quads
@@ -208,38 +213,23 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 	if (!expr)
 		return;
 
-	if (expr->type == 2) {
-		if ((expr->binop->lhs->type != 2 && expr->binop->lhs->type != 4)
-		    && (expr->binop->rhs->type != 2
-			&& expr->binop->rhs->type != 4)) {
-			quad_from_binop(gen, expr);
-		} else if (expr->binop->lhs->type != 2
-			   && expr->binop->lhs->type != 4) {
-			expr_gen(gen, expr->binop->rhs);
-			quad_from_binop(gen, expr);
-		} else if (expr->binop->rhs->type != 2
-			   && expr->binop->rhs->type != 4) {
+    if (expr->type == 2) {
+		if (expr->binop->lhs->type == 2 ||  expr->binop->lhs->type == 4)
 			expr_gen(gen, expr->binop->lhs);
-			quad_from_binop(gen, expr);
-		} else {
-			expr_gen(gen, expr->binop->lhs);
+		if (expr->binop->rhs->type == 2 || expr->binop->rhs->type == 4)
 			expr_gen(gen, expr->binop->rhs);
-			quad_from_binop(gen, expr);
-		}
-		expr->virt_reg = quad_gen_last_temp(gen);
 
+        quad_resolve_bool(gen, expr);
+        quad_from_binop(gen, expr);
+        if (!expr->next)
+            expr->virt_reg = quad_gen_last_temp(gen);
 	} else if (expr->type == 4) {
-		if (expr->unop->term->type != 2 && expr->unop->term->type != 4) {
-			if (expr->unop->op != oper_deref
-			    && expr->unop->op != oper_ref)
-				quad_from_unop(gen, expr);
-		} else {
+		if (expr->unop->term->type == 2 || expr->unop->term->type == 4) {
 			expr_gen(gen, expr->unop->term);
-			if (expr->unop->op != oper_deref
-			    && expr->unop->op != oper_ref)
-				quad_from_unop(gen, expr);
 		}
 
+        if (expr->unop->op != oper_deref && expr->unop->op != oper_ref)
+            quad_from_unop(gen, expr);
 		//If there is a comma, discard the current expression
 		if (!expr->next)
 			expr->virt_reg = quad_gen_last_temp(gen);
@@ -250,6 +240,37 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 		expr->truelist = merge(expr->truelist, expr->next->truelist);
 		expr->falselist = merge(expr->falselist, expr->next->falselist);
 	}
+}
+
+void quad_resolve_bool(quad_gen * gen, t_expr * expr)
+{
+    if (expr->type == 2 && expr->binop->op == oper_assign &&  expr->binop->rhs->falselist && expr->binop->rhs->truelist) {
+        quadruple * rstart = quad_label(quad_gen_request_label(gen));
+        quadruple * sete = quad_label(quad_gen_request_label(gen));
+        quadruple * end = quad_label(quad_gen_request_label(gen));
+        quad_gen_add(gen, rstart);
+
+        backpatch(expr->binop->rhs->truelist, rstart->label);
+        backpatch(expr->binop->rhs->falselist, sete->label);
+        expr->binop->rhs->truelist = NULL;
+        expr->binop->rhs->falselist = NULL;
+
+        quad_operand * result = quad_opr_from_expr(gen, expr->binop->rhs);
+        quad_operand * true_arg = quad_operand_init();
+        true_arg->type = Q_CONST;
+        true_arg->constant = 1;
+        quad_operand * false_arg = quad_operand_init();
+        false_arg->type = Q_CONST;
+        false_arg->constant = 0;
+
+        quad_gen_add(gen, quad_general(quad_assign, result, true_arg, NULL));
+        quad_gen_add(gen, quad_jump(quad_jmp, end->label));
+        quad_gen_add(gen, sete);
+        quad_gen_add(gen, quad_general(quad_assign, result, false_arg, NULL));
+        quad_gen_add(gen, end);
+
+    }
+
 }
 
 quad_op quad_map_operation(int oper)
@@ -362,14 +383,29 @@ quad_operand *quad_new_temp(quad_gen * gen)
 	return oper;
 }
 
+int is_condition(int oper)
+{
+    if (oper == oper_equal || oper == oper_notequal)
+        return 1;
+    if (oper == oper_gt || oper == oper_lt || oper == oper_lte || oper == oper_gte)
+        return 1;
+    if (oper == oper_and || oper == oper_or)
+        return 1;
+
+    return 0;
+}
+
 t_expr *make_condition(t_expr * expr)
 {
 	t_expr *cond = expr;
-	if (expr->type != 2 && expr->type != 4) {
-		cond =
+	if ((expr->type != 2 || !is_condition(expr->binop->op)) && (expr->type != 4 || !is_condition(expr->unop->op))) {
+        cond =
 		    t_expr_init2(expr, oper_notequal,
 				 t_expr_init1(t_numeric_init0("0")));
-	}
+
+	    cond->truelist = expr->truelist;
+        cond->falselist = expr->falselist;
+    }
 
 	return cond;
 }
@@ -453,7 +489,7 @@ void quad_from_binop(quad_gen * gen, t_expr * expr)
 	} else {
 		if (quad_ptr_scale(gen, expr))
 			return;
-		quad_operand *result = quad_new_temp(gen);
+		result = quad_new_temp(gen);
 		arg1 = quad_opr_from_expr(gen, expr->binop->lhs);
 		arg2 = quad_opr_from_expr(gen, expr->binop->rhs);
 		quad = quad_general(op, result, arg1, arg2);
@@ -463,7 +499,7 @@ void quad_from_binop(quad_gen * gen, t_expr * expr)
 		quadruple *qlabel = quad_label(quad_gen_request_label(gen));
 		quad_gen_insert(gen, max_idx + 1, qlabel);
 		backpatch(expr->binop->lhs->truelist, qlabel->label);
-		expr->binop->lhs->truelist = NULL;
+        expr->binop->lhs->truelist = NULL;
 		expr->truelist = expr->binop->rhs->truelist;
 		expr->falselist =
 		    merge(expr->binop->lhs->falselist,
@@ -473,7 +509,6 @@ void quad_from_binop(quad_gen * gen, t_expr * expr)
 		quadruple *qlabel = quad_label(quad_gen_request_label(gen));
 		quad_gen_insert(gen, max_idx + 1, qlabel);
 		backpatch(expr->binop->lhs->falselist, qlabel->label);
-
 		expr->binop->lhs->falselist = NULL;
 		expr->falselist = expr->binop->rhs->falselist;
 		expr->truelist =

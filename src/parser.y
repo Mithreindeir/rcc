@@ -14,6 +14,7 @@
 
 %union {
 	t_expr *expr;
+	t_expr_list *expr_list;
 	t_ident *ident;
 	t_numeric *cnumeric;
 	t_declr *declr;
@@ -62,6 +63,7 @@
 %type <func> func_def
 %type <externdef> external_def
 %type <jmp> jmp_stmt
+%type <expr_list> expr_list
 
 /*Operator Precedence To Resolve Conflicts*/
 %left T_ASN
@@ -77,7 +79,7 @@
 %%
 
 trans_unit
-	: external_def { tunit = t_trans_unit_init($1); }	
+	: external_def { tunit = t_trans_unit_init($1); }
 	| trans_unit external_def { tunit = t_trans_unit_add(tunit, $2); }
 	;
 
@@ -88,7 +90,7 @@ external_def
 
 
 decl_list
-	: %empty { $$ = 0; } 
+	: %empty { $$ = 0; }
 	| decl_spec { $$ = t_decl_list_init(t_expr_init3($1)); }
 	| decl_list T_COMMA decl_spec { $$ = t_decl_list_add($1, t_expr_init3($3)); }
 	;
@@ -169,11 +171,17 @@ uni_op
 	| T_BAND { $$ = oper_ref; }
 	;
 
+expr_list
+	: asn_expr { $$ = t_expr_list_init($1) ; }
+	| expr_list T_COMMA asn_expr { $$ = t_expr_list_add($1, $3); }
+	;
+
 postfix
 	: primary { $$ = $1; }
 	| postfix T_LBRCK expr T_RBRCK { $$ = t_expr_init4(t_expr_init2($1, oper_add, $3), oper_deref); }
-	| postfix T_INC { $$ = t_expr_init4($1, oper_incpost); } 
+	| postfix T_INC { $$ = t_expr_init4($1, oper_incpost); }
 	| postfix T_DEC { $$ = t_expr_init4($1, oper_decpost); }
+	| postfix T_LPAREN expr_list T_RPAREN { $$ = t_expr_init6(t_call_init($1, $3)); }
 	;
 
 asn_op

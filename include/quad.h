@@ -13,11 +13,13 @@ typedef enum quadr_t {
 	Q_LABEL,
 	Q_GOTO,
 	Q_CGOTO,
-	Q_PARAM
+	Q_PARAM,
+	Q_RET
 } quadr_t;
 
 typedef enum quad_op {
 	quad_none,
+	quad_ret,
 	quad_jmp,
 	quad_jeq,
 	quad_jneq,

@@ -63,7 +63,8 @@ void quad_implicit_type(quadruple * quad)
 		type = Q_CGOTO;
 	else if (op == quad_ptrasn)
 		type = Q_PTR;
-
+	else if (op == quad_ret)
+		type = Q_RET;
 	quad->type = type;
 }
 
@@ -105,6 +106,9 @@ quadruple *quad_label(int label)
 void quad_operation_print(quad_op oper)
 {
 	switch (oper) {
+	case quad_ret:
+		printf("ret");
+		break;
 	case quad_jmp:
 		printf("goto");
 		break;
@@ -187,6 +191,11 @@ void quad_print(quadruple * quad)
 		printf(" L%d", quad->label);
 	} else if (quad->type == Q_LABEL) {
 		printf("L%d", quad->label);
+	} else if (quad->type == Q_RET) {
+		printf("\t");
+		quad_operation_print(quad->operation);
+		printf(" ");
+		quad_opr_print(quad->arg1);
 	} else {
 		printf("\t");
 		quad_opr_print(quad->result);

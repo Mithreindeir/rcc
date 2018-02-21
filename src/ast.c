@@ -152,15 +152,28 @@ void t_decl_list_destroy(t_decl_list * dlist)
 	free(dlist);
 }
 
-t_call *t_call_init(t_ident * ident, t_expr ** expr_l, int num_expr)
+t_call *t_call_init(t_expr * func, t_expr_list * list)
 {
 	t_call *call = malloc(sizeof(t_call));
 
-	call->ident = ident;
-	call->expr_list = expr_l;
-	call->num_expr = num_expr;
+	call->func = func;
+	call->expr_list = list->expr_list;
+	call->num_expr = list->num_expr;
+	free(list);
 
 	return call;
+}
+
+void t_call_destroy(t_call * call)
+{
+	if (!call) return;
+
+	for (int i = 0; i < call->num_expr; i++) {
+		t_expr_destroy(call->expr_list[i]);
+	}
+	t_expr_destroy(call->func);
+	free(call->expr_list);
+	free(call);
 }
 
 t_conditional_stmt *t_conditional_stmt_init(t_expr * condition, t_block * block,
@@ -231,6 +244,26 @@ t_unop *t_unop_init(int op, t_expr * s)
 	unop->op = op;
 
 	return unop;
+}
+
+t_expr_list *t_expr_list_init(t_expr *expr)
+{
+	t_expr_list *list = malloc(sizeof(t_expr_list));
+
+	list->expr_list = malloc(sizeof(t_expr*));
+	list->expr_list[0] = expr;
+	list->num_expr = 1;
+
+	return list;
+}
+
+t_expr_list *t_expr_list_add(t_expr_list *list, t_expr *expr)
+{
+	list->num_expr++;
+	list->expr_list = realloc(list->expr_list, sizeof(t_expr*) * list->num_expr);
+	list->expr_list[list->num_expr-1] = expr;
+
+	return list;
 }
 
 t_expr *t_expr_init0(t_ident * ident)
@@ -324,6 +357,22 @@ t_expr *t_expr_init5(char *string)
 	expr->truelist = NULL;
 	expr->falselist = NULL;
 	expr->cstring = string;
+	expr->next = NULL;
+
+	return expr;
+}
+
+t_expr *t_expr_init6(t_call *call)
+{
+	t_expr * expr = malloc(sizeof(t_expr));
+
+	expr->type = 6;
+	expr->virt_reg = -1;
+	expr->num_ptr = 0;
+	expr->type_name = 0;
+	expr->truelist = NULL;
+	expr->falselist = NULL;
+	expr->call = call;
 	expr->next = NULL;
 
 	return expr;
@@ -815,6 +864,8 @@ void t_expr_destroy(t_expr * expr)
 		t_unop_destroy(expr->unop);
 	else if (expr->type == 5)
 		free(expr->cstring);
+	else if (expr->type == 6)
+		t_call_destroy(expr->call);
 	free(expr);
 }
 

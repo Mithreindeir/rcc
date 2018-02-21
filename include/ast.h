@@ -71,6 +71,7 @@ typedef struct t_decl_list t_decl_list;
 typedef struct t_external_def t_external_def;
 typedef struct t_trans_unit t_trans_unit;
 typedef struct t_jump t_jump;
+typedef struct t_expr_list t_expr_list;
 
 struct t_trans_unit {
 	t_external_def **definitions;
@@ -94,12 +95,21 @@ t_external_def *t_external_def_init1(t_expr * decl);
 void t_external_def_destroy(t_external_def * def);
 
 struct t_call {
-	t_ident *ident;
+	t_expr * func;
 	t_expr **expr_list;
 	int num_expr;
 };
 
-t_call *t_call_init(t_ident * ident, t_expr ** expr_l, int num_expr);
+t_call *t_call_init(t_expr *func, t_expr_list *list);
+void t_call_destroy(t_call * call);
+
+struct t_expr_list {
+	t_expr **expr_list;
+	int num_expr;
+};
+
+t_expr_list *t_expr_list_init(t_expr * expr);
+t_expr_list *t_expr_list_add(t_expr_list *expr_list, t_expr *expr);
 
 struct t_func_def {
 	t_decl_spec *decl_spec;
@@ -178,6 +188,7 @@ struct t_expr {
 		t_decl_spec *decl_spec;
 		t_unop *unop;
 		char *cstring;
+		t_call * call;
 	};
 	struct t_expr *next;
 	int type;
@@ -194,6 +205,7 @@ t_expr *t_expr_init2(t_expr * lhs, int op, t_expr * rhs);
 t_expr *t_expr_init3(t_decl_spec * decl_spec);
 t_expr *t_expr_init4(t_expr * term, int oper);
 t_expr *t_expr_init5(char *string);
+t_expr *t_expr_init6(t_call * call);
 t_expr *t_expr_add(t_expr * old, t_expr * next);
 void t_expr_destroy(t_expr * expr);
 
