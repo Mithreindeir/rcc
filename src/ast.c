@@ -166,7 +166,8 @@ t_call *t_call_init(t_expr * func, t_expr_list * list)
 
 void t_call_destroy(t_call * call)
 {
-	if (!call) return;
+	if (!call)
+		return;
 
 	for (int i = 0; i < call->num_expr; i++) {
 		t_expr_destroy(call->expr_list[i]);
@@ -246,22 +247,23 @@ t_unop *t_unop_init(int op, t_expr * s)
 	return unop;
 }
 
-t_expr_list *t_expr_list_init(t_expr *expr)
+t_expr_list *t_expr_list_init(t_expr * expr)
 {
 	t_expr_list *list = malloc(sizeof(t_expr_list));
 
-	list->expr_list = malloc(sizeof(t_expr*));
+	list->expr_list = malloc(sizeof(t_expr *));
 	list->expr_list[0] = expr;
 	list->num_expr = 1;
 
 	return list;
 }
 
-t_expr_list *t_expr_list_add(t_expr_list *list, t_expr *expr)
+t_expr_list *t_expr_list_add(t_expr_list * list, t_expr * expr)
 {
 	list->num_expr++;
-	list->expr_list = realloc(list->expr_list, sizeof(t_expr*) * list->num_expr);
-	list->expr_list[list->num_expr-1] = expr;
+	list->expr_list =
+	    realloc(list->expr_list, sizeof(t_expr *) * list->num_expr);
+	list->expr_list[list->num_expr - 1] = expr;
 
 	return list;
 }
@@ -362,9 +364,9 @@ t_expr *t_expr_init5(char *string)
 	return expr;
 }
 
-t_expr *t_expr_init6(t_call *call)
+t_expr *t_expr_init6(t_call * call)
 {
-	t_expr * expr = malloc(sizeof(t_expr));
+	t_expr *expr = malloc(sizeof(t_expr));
 
 	expr->type = 6;
 	expr->virt_reg = -1;
