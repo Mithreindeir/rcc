@@ -225,8 +225,15 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 
 		quad_resolve_bool(gen, expr);
 		quad_from_binop(gen, expr);
-		if (!expr->next)
+		if (!expr->next) {
 			expr->virt_reg = quad_gen_last_temp(gen);
+            if (expr->virt_reg == -1 || (expr->virt_reg != expr->binop->lhs->virt_reg && expr->virt_reg != expr->binop->rhs->virt_reg)) {
+                quad_operand *ntemp = quad_new_temp(gen);
+                quad_operand *lval = quad_opr_from_expr(gen, expr->binop->lhs);
+                quad_gen_add(gen, quad_general(quad_assign, ntemp, lval, NULL));
+                expr->virt_reg = ntemp->temp;
+            }
+        }
 	} else if (expr->type == 4) {
 		if (expr->unop->term->type == 2 || expr->unop->term->type == 4
 		    || expr->unop->term->type == 6) {
@@ -247,7 +254,16 @@ void expr_gen(quad_gen * gen, t_expr * expr)
 			    quad_opr_from_expr(gen, expr->call->expr_list[i]);
 			quad_gen_add(gen, param);
 		}
+        quad_operand * rc = quad_opr_from_expr(gen, expr->call->func);
+        rc->call = 1;
+        if (expr->type_name != type_void) {
+            quad_gen_add(gen, quad_general(quad_assign, quad_new_temp(gen), rc, NULL));
+        } else {
+            quad_gen_add(gen, quad_general(quad_none, rc, NULL, NULL));
+        }
 
+        if (!expr->next)
+            expr->virt_reg = quad_gen_last_temp(gen);
 	}
 
 	if (expr->next) {
@@ -339,11 +355,6 @@ quad_op quad_map_operation(int oper)
 
 quad_operand *quad_opr_from_expr(quad_gen * gen, t_expr * expr)
 {
-	if (expr->type == 6) {
-		quad_operand *copr = quad_opr_from_expr(gen, expr->call->func);
-		copr->call = 1;
-		return copr;
-	}
 	quad_operand *opr = quad_operand_init();
 	while (expr->next)
 		expr = expr->next;

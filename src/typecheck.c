@@ -93,10 +93,14 @@ void t_expr_check(symbol_table * symt, t_expr * expr)
 		return;
 
 	if (expr->type == 0) {
-		if (!symbol_table_lookup(symt, expr->ident->ident)) {
+		symbol * sym = symbol_table_lookup(symt, expr->ident->ident);
+
+		if (!sym) {
 			printf("%s not declared\n", expr->ident->ident);
 			exit(1);
 		}
+		expr->type_name = sym->type.type_name;
+		expr->num_ptr = sym->type.num_ptr;
 	} else if (expr->type == 2) {
 		t_expr_check(symt, expr->binop->lhs);
 		t_expr_check(symt, expr->binop->rhs);
@@ -137,11 +141,14 @@ void t_expr_check(symbol_table * symt, t_expr * expr)
 		expr->type_name = expr->binop->lhs->type_name;
 
 	} else if (expr->type == 3) {
-		if (!symbol_table_insert_decl_spec(symt, expr->decl_spec)) {
+		symbol * sym = symbol_table_insert_decl_spec(symt, expr->decl_spec);
+		if (!sym) {
 			printf("Redeclaration of %s\n",
 			       get_decl_name(expr->decl_spec));
 			exit(1);
 		}
+		expr->type_name = sym->type.type_name;
+		expr->num_ptr = sym->type.num_ptr;
 	} else if (expr->type == 4) {
 		t_expr_check(symt, expr->unop->term);
 		if (expr->unop->term->type != 2 && expr->unop->term->type != 4) {

@@ -78,6 +78,8 @@ typedef struct quadruple {
 	char *name;
 	//Holding index in quad array helps with backpatching
 	int idx;
+	/*Double linked list helps restructuring later on*/
+	struct quadruple * next, *prev;
 } quadruple;
 
 typedef struct quad_gen {

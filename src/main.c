@@ -19,7 +19,6 @@ int main(int argc, char **argv)
 	symbol_table_reset(global_table);
 	unit_gen(gen, tunit);
 	quad_gen_print(gen);
-
 	symbol_table_destroy(global_table);
 	quad_gen_destroy(gen);
 	t_trans_unit_destroy(tunit);

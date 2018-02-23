@@ -31,6 +31,8 @@ quadruple *quad_init()
 	quad->arg1 = NULL;
 	quad->arg2 = NULL;
 	quad->name = NULL;
+	quad->next = NULL;
+	quad->prev = NULL;
 
 	return quad;
 }
@@ -221,7 +223,7 @@ void quad_print(quadruple * quad)
 	} else {
 		printf("\t");
 		quad_opr_print(quad->result);
-		printf(" = ");
+		if (quad->operation != quad_none) printf(" = ");
 		quad_opr_print(quad->arg1);
 		if (quad->operation != quad_assign)
 			quad_operation_print(quad->operation);
